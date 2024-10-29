@@ -1,0 +1,421 @@
+---
+title: 'FIM Update'
+author: ' Manu and Georgia and Sarah '
+date: "`r glue::glue(format(Sys.Date(), '%A, %B %d %Y'), ' at ', format(Sys.time(), '%I:%M %p'))`"
+tz: 'America/New_York'
+mainfont: Serif
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    number_sections: false
+    theme: cerulean
+    highlight: zenburn
+    highretina: 3
+    self_contained: yes
+    css: [style.css]
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>", 
+  echo = FALSE,
+  fig.align = 'center',
+  warning = FALSE,
+  message = FALSE,
+  cache = FALSE,
+  results='hide',
+  fig.keep='all'
+)
+```
+
+```{r}
+librarian::shelf(ggplot2, gt, readr)
+  plots <- read_rds('data/plots')
+```
+
+# Fiscal Impact Measure
+```{r fiscal_impact}
+plots$fiscal_impact 
+```
+
+# Summary 
+```{r, include=TRUE, results = 'show'}
+summary_tbl
+```
+
+# FIM Consistent Purchases
+````{r fim_purchases_contribution}
+plots$federal_contribution
+plots$state_contribution
+````
+
+
+
+
+
+
+# NIPA Purchases {.tabset .tabset-pills}
+
+
+## Contributions
+
+```{r nipa_purchases_contribution}
+plots$federal_purchases_contribution
+plots$state_purchases_contribution
+```
+
+
+
+## Real Levels 
+
+```{r nipa_purchases_rlevels}
+plots$federal_purchases_real  
+plots$state_purchases_real 
+
+```
+
+
+## Nominal Levels 
+
+```{r nipa_purchases_levels}
+plots$federal_purchases
+plots$state_purchases
+
+```
+
+
+
+
+
+
+# Grants {.tabset .tabset-pills}
+
+## Contributions
+
+```{r grants}
+plots$consumption_grants_contribution
+plots$investment_grants_contribution
+
+```
+
+## Real Levels
+
+```{r grants_rlevels}
+plots$consumption_grants_real
+plots$investment_grants_real
+```
+
+## Nominal Levels
+
+```{r grants_levels}
+plots$consumption_grants
+plots$investment_grants
+```
+
+
+
+
+# Taxes
+
+## Corporate taxes {.tabset .tabset-pills}
+
+### Contributions
+
+```{r corp_contribution}
+plots$federal_corporate_taxes_contribution
+plots$state_corporate_taxes_contribution
+```
+
+### Real Levels
+
+```{r corp_rlvl}
+plots$federal_corporate_taxes_real
+plots$state_corporate_taxes_real
+```
+
+### Nominal Levels
+
+```{r corp_lvl}
+plots$federal_corporate_taxes
+plots$state_corporate_taxes
+```
+
+
+## Non-corporate taxes {.tabset .tabset-pills}
+
+
+### Contributions
+
+```{r noncorp_cont}
+plots$federal_non_corporate_taxes_contribution
+plots$state_non_corporate_taxes_contribution
+```
+
+### Real Levels
+
+```{r noncorp_rlvl}
+plots$federal_non_corporate_taxes_real
+plots$state_non_corporate_taxes_real
+
+```
+
+### Nominal Levels
+
+```{r noncorp_lvl}
+plots$federal_non_corporate_taxes
+plots$state_non_corporate_taxes
+
+```
+
+
+
+# Transfers 
+
+## Total
+```{r transfers_contribution}
+plots$transfers_contribution
+```
+
+
+
+## Health Outlays {.tabset .tabset-pills}
+
+
+### Contributions
+
+```{r health}
+
+plots$federal_health_outlays_contribution
+plots$state_health_outlays_contribution
+```
+
+### Real Levels
+
+```{r health_rlvl}
+
+plots$federal_health_outlays_real
+plots$state_health_outlays_real
+```
+
+### Nominal Levels
+
+```{r health_lvl}
+
+plots$federal_health_outlays
+plots$state_health_outlays
+```
+
+
+
+
+## Subsidies (non-ARP) {.tabset .tabset-pills}
+
+### Contributions
+
+```{r subsidies}
+plots$federal_subsidies_contribution
+plots$state_subsidies_contribution
+
+```
+
+### Real Levels
+
+```{r subsidies_rlvl}
+plots$federal_subsidies_real
+plots$state_subsidies_real
+```
+
+
+### Nominal Levels
+
+```{r subsidies_lvl}
+plots$federal_subsidies
+plots$state_subsidies
+```
+
+
+
+
+## Subsidies (ARP) {.tabset .tabset-pills}
+
+### Contribution
+```{r subsidies-arp-cont}
+plots$federal_aid_to_small_businesses_arp_contribution
+
+```
+
+### Real Levels
+
+```{r subsidies-arp-rlevel}
+
+plots$federal_aid_to_small_businesses_arp_real
+```
+
+### Nominal Levels
+
+```{r subsidies-arp-level}
+
+plots$federal_aid_to_small_businesses_arp
+```
+
+
+
+
+
+## Unemployment Insurance {.tabset .tabset-pills}
+
+### Contributions
+
+```{r ui_cont}
+plots$federal_ui_contribution
+plots$state_ui_contribution
+```
+
+### Real Levels
+
+```{r ui_rlvl}
+
+plots$federal_ui_real
+plots$state_ui_real
+```
+
+### Nominal Levels
+
+```{r ui_lvl}
+
+plots$federal_ui
+plots$state_ui
+```
+
+
+
+
+## Other aid to vulnerable households {.tabset .tabset-pills}
+ 
+### Contribution
+```{r vulnerable}
+plots$federal_other_vulnerable_arp_contribution
+```
+
+### Real Level
+
+```{r vulnerable_rlvl}
+plots$federal_other_vulnerable_arp_real
+```
+
+### Nominal Level
+
+```{r vulnerable_lvl}
+plots$federal_other_vulnerable_arp
+```
+
+
+
+
+
+## Rebate Checks {.tabset .tabset-pills}
+
+### Contribution
+
+```{r rebate_cont}
+plots$rebate_checks_contribution
+
+```
+
+### Real Level
+
+```{r rebate_rlvl}
+plots$rebate_checks_real
+
+```
+
+### Nominal Level
+
+```{r rebate_lvl}
+plots$rebate_checks
+
+```
+
+
+
+
+
+
+## Rebate Checks (ARP) {.tabset .tabset-pills}
+
+
+
+### Contribution
+
+```{r rebate_arp_cont}
+plots$rebate_checks_arp_contribution
+
+```
+
+### Real Level
+
+```{r rebate_arp_rlvl}
+plots$rebate_checks_arp_real
+
+```
+
+### Nominal Level
+
+```{r rebate_arp_lvl}
+plots$rebate_checks_arp
+
+```
+
+
+
+
+
+
+
+## Direct aid to households {.tabset .tabset-pills}
+
+### Contribution
+
+```{r aid_cont}
+plots$federal_other_direct_aid_arp_contribution
+```
+
+### Real Level
+
+```{r aid_rlvl}
+plots$federal_other_direct_aid_arp_real
+```
+
+### Nominal Level
+
+```{r aid_lvl}
+plots$federal_other_direct_aid_arp
+```
+
+
+
+
+## Social Benefits Remainder {.tabset .tabset-pills}
+
+### Contribution
+```{r soc_cont}
+plots$federal_social_benefits_contribution
+plots$state_social_benefits_contribution
+```
+
+### Real Level
+```{r soc_rlvl}
+
+plots$federal_social_benefits_real
+plots$state_social_benefits_real
+```
+
+### Nominal Level
+```{r soc_lvl}
+
+plots$federal_social_benefits
+plots$state_social_benefits
+```

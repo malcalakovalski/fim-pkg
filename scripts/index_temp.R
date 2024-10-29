@@ -1,81 +1,99 @@
+##########################
+# Update Comparison File #
+##########################
 
+# This script generates an html file called update-comparison that is stored in the results folder. 
+# This file -- colloquially called The Manu File -- allows us to compare our FIM results to what we published in the previous month. 
+# You must run fiscal_impact_BETA prior to running this script. It draws in an Excel file containing
+# the FIM contributions. It generates tables and figures comparing this month's results to last month's results. 
+
+# Set Current Quarter
 current_quarter <- yearquarter(Sys.Date()) - 1
 
-# Load previous months results
-previous <-
-  readxl::read_xlsx(glue('results/{last_month_year}/beta/contributions-{last_month_year}.xlsx')) %>% 
+#------------------- Calculate Real Levels ----------------------------#
+
+# Load in previous month's inputs
+previous_inputs <- 
+  readxl::read_xlsx(glue('results/{last_month_year}/beta/inputs-{last_month_year}.xlsx')) %>%
   mutate(date = yearquarter(date)) %>%
   drop_na(date) %>%
   as_tsibble(index = date) %>%
-  filter_index("2020 Q2" ~ as.character(current_quarter + 8)) %>% 
-  select(-recession)
+  filter_index("2020 Q1" ~ as.character(current_quarter + 8)) %>% 
+  select(-id, 
+         -recession)
 
-
-# Select current results
-current <- 
-  readxl::read_xlsx(glue('results/{month_year}/beta/contributions-{month_year}.xlsx')) %>%
+# Load the current month's inputs 
+current_inputs <- 
+  readxl::read_xlsx(glue('results/{month_year}/beta/inputs-{month_year}.xlsx')) %>%
   drop_na(date) %>%
   mutate(date = yearquarter(date)) %>%  
   as_tsibble(index = date) %>%
-  filter_index("2020 Q2" ~ as.character(current_quarter + 8)) %>%
-  select(-recession)
+  filter_index("2020 Q1" ~ as.character(current_quarter + 8)) %>%
+  select(-id, 
+         -recession)
 
-
-# Pivot both longer
-
-previous_long <- previous %>%
-  mutate(across(-c(date,id), as.numeric)) %>%
-  pivot_longer(
-    cols = -c(date, id),  
-    names_to = "name",    
-    values_to = "previous"  
-  )
-current_long <- current %>%
-  mutate(across(-c(date,id), as.numeric)) %>%
-  pivot_longer(
-    cols = -c(date, id),  
-    names_to = "name",    
-    values_to = "current"  
-  )
-
-if(current_quarter<= yearquarter("2022 Q2")){
-  stloans<- current_long %>% filter(name == "federal_student_loans_contribution") %>% mutate(id = "historical") %>% mutate_where(date > yearquarter('2022 Q2'),id = "projection") %>% mutate(previous = 0) %>% select(date, name, id, previous)
-  previous_long<- bind_rows(previous_long, stloans)
-}
-
-# Merge and compare
-comparison <- inner_join(previous_long,
-                         current_long,
-                         by = c('date', 'name'))
-
-comparison_wide <-
-  comparison %>% 
-  filter(date >= yearquarter("2021 Q2")) %>% 
-  ungroup() %>% 
-  as_tibble() %>% 
+# Use the nominal values and conusmption deflator to calculate the real levels 
+# Previous
+previous_inputs <- previous_inputs %>%
   mutate(
-    current = as.numeric(current), 
-    previous = as.numeric(previous),
-    difference = current-previous, 
-    across(where(is.numeric),
-           round,
-           digits = 4)) %>% 
-  pivot_longer(where(is.numeric), 
-               names_to = 'source') %>% 
-  arrange(source) %>%
-  pivot_wider(names_from = date,
-              values_from = value) %>% 
-  mutate(name = snakecase::to_title_case(name))
+    federal_ui_real = federal_ui - lag(federal_ui) * consumption_deflator_growth,
+    state_ui_real = state_ui - lag(state_ui) * consumption_deflator_growth,
+    federal_subsidies_real = federal_subsidies - lag(federal_subsidies) * consumption_deflator_growth,
+    state_subsidies_real = state_subsidies - lag(state_subsidies) * consumption_deflator_growth,
+    federal_health_outlays_real = federal_health_outlays - lag(federal_health_outlays) * consumption_deflator_growth,
+    state_health_outlays_real = state_health_outlays - lag(state_health_outlays) * consumption_deflator_growth,
+    federal_social_benefits_real = federal_social_benefits - lag(federal_social_benefits) * consumption_deflator_growth,
+    state_social_benefits_real = state_social_benefits - lag(state_social_benefits) * consumption_deflator_growth,
+    federal_corporate_taxes_real = federal_corporate_taxes - lag(federal_corporate_taxes) * consumption_deflator_growth,
+    state_corporate_taxes_real = state_corporate_taxes - lag(state_corporate_taxes) * consumption_deflator_growth,
+    federal_non_corporate_taxes_real = federal_non_corporate_taxes - lag(federal_non_corporate_taxes) * consumption_deflator_growth,
+    state_non_corporate_taxes_real = state_non_corporate_taxes - lag(state_non_corporate_taxes) * consumption_deflator_growth,
+    rebate_checks_arp_real = rebate_checks_arp - lag(rebate_checks_arp) * consumption_deflator_growth,
+    federal_other_direct_aid_arp_real = federal_other_direct_aid_arp - lag(federal_other_direct_aid_arp) * consumption_deflator_growth,
+    federal_other_vulnerable_arp_real = federal_other_vulnerable_arp - lag(federal_other_vulnerable_arp) * consumption_deflator_growth,
+    federal_aid_to_small_businesses_arp_real = federal_aid_to_small_businesses_arp - lag(federal_aid_to_small_businesses_arp) * consumption_deflator_growth,
+    federal_student_loans_real = federal_student_loans - lag(federal_student_loans) * consumption_deflator_growth,
+    supply_side_ira_real = supply_side_ira - lag(supply_side_ira) * consumption_deflator_growth,
+    rebate_checks_real = rebate_checks - lag(rebate_checks) * consumption_deflator_growth,
+    federal_purchases_real = federal_purchases - lag(federal_purchases) * consumption_deflator_growth,
+    state_purchases_real = state_purchases - lag(state_purchases) * consumption_deflator_growth,
+    consumption_grants_real = consumption_grants - lag(consumption_grants) * consumption_deflator_growth,
+    investment_grants_real = investment_grants - lag(investment_grants) * consumption_deflator_growth
+  )
+# Current 
 
-openxlsx::write.xlsx(x = comparison_wide,
-                     file = glue('results/{month_year}/beta/comparison-{month_year}.xlsx'),
-                     overwrite = TRUE)
+current_inputs <- current_inputs %>%
+  mutate(
+    federal_ui_real = federal_ui - lag(federal_ui) * consumption_deflator_growth,
+    state_ui_real = state_ui - lag(state_ui) * consumption_deflator_growth,
+    federal_subsidies_real = federal_subsidies - lag(federal_subsidies) * consumption_deflator_growth,
+    state_subsidies_real = state_subsidies - lag(state_subsidies) * consumption_deflator_growth,
+    federal_health_outlays_real = federal_health_outlays - lag(federal_health_outlays) * consumption_deflator_growth,
+    state_health_outlays_real = state_health_outlays - lag(state_health_outlays) * consumption_deflator_growth,
+    federal_social_benefits_real = federal_social_benefits - lag(federal_social_benefits) * consumption_deflator_growth,
+    state_social_benefits_real = state_social_benefits - lag(state_social_benefits) * consumption_deflator_growth,
+    federal_corporate_taxes_real = federal_corporate_taxes - lag(federal_corporate_taxes) * consumption_deflator_growth,
+    state_corporate_taxes_real = state_corporate_taxes - lag(state_corporate_taxes) * consumption_deflator_growth,
+    federal_non_corporate_taxes_real = federal_non_corporate_taxes - lag(federal_non_corporate_taxes) * consumption_deflator_growth,
+    state_non_corporate_taxes_real = state_non_corporate_taxes - lag(state_non_corporate_taxes) * consumption_deflator_growth,
+    rebate_checks_arp_real = rebate_checks_arp - lag(rebate_checks_arp) * consumption_deflator_growth,
+    federal_other_direct_aid_arp_real = federal_other_direct_aid_arp - lag(federal_other_direct_aid_arp) * consumption_deflator_growth,
+    federal_other_vulnerable_arp_real = federal_other_vulnerable_arp - lag(federal_other_vulnerable_arp) * consumption_deflator_growth,
+    federal_aid_to_small_businesses_arp_real = federal_aid_to_small_businesses_arp - lag(federal_aid_to_small_businesses_arp) * consumption_deflator_growth,
+    federal_student_loans_real = federal_student_loans - lag(federal_student_loans) * consumption_deflator_growth,
+    supply_side_ira_real = supply_side_ira - lag(supply_side_ira) * consumption_deflator_growth,
+    rebate_checks_real = rebate_checks - lag(rebate_checks) * consumption_deflator_growth,
+    federal_purchases_real = federal_purchases - lag(federal_purchases) * consumption_deflator_growth,
+    state_purchases_real = state_purchases - lag(state_purchases) * consumption_deflator_growth,
+    consumption_grants_real = consumption_grants - lag(consumption_grants) * consumption_deflator_growth,
+    investment_grants_real = investment_grants - lag(investment_grants) * consumption_deflator_growth
+  )
 
+#------------------- Contributions Figures ----------------------------#
 
-# Figures -----------------------------------------------------------------
+# This section of the code pulls in the contributions and re-formats the data. 
 
-
-# Load previous months results
+# Load previous month's results
 previous <-
   readxl::read_xlsx(glue('results/{last_month_year}/beta/contributions-{last_month_year}.xlsx')) %>%
   mutate(date = yearquarter(date)) %>%
@@ -85,73 +103,135 @@ previous <-
   select(-id, 
          -recession)
 
+# Load in current month's results 
 current <- 
   readxl::read_xlsx(glue('results/{month_year}/beta/contributions-{month_year}.xlsx')) %>%
   drop_na(date) %>%
   mutate(date = yearquarter(date)) %>%  
   as_tsibble(index = date) %>%
-  filter_index("2020 Q2" ~ as.character(current_quarter + 8)) %>%
+  filter_index("2020 Q1" ~ as.character(current_quarter + 8)) %>%
   select(-id, 
          -recession)
 
+#-------------- Clean the Data -------------------------------------# 
+
+# Reshape and join the data 
 previous_long <- pivot_longer(previous, cols = where(is.numeric), values_to = 'previous')
 current_long <- pivot_longer(current, cols = where(is.numeric), values_to = 'current')
+previous_inputs_long <- pivot_longer(previous_inputs, cols = where(is.numeric), values_to = 'previous')
+current_inputs_long <- pivot_longer(current_inputs, cols = where(is.numeric), values_to = 'current')
 
-if(current_quarter<= yearquarter("2022 Q2")){
-  stloans<- current_long %>% 
-    mutate(id = na_if(id, "historical"))%>% 
-    mutate(id = na_if(id, "projection")) %>% 
-    select(-id)%>%
-    filter(name == "federal_student_loans" | name == "federal_student_loans_contribution" | name == "federal_student_loans_post_mpc" | name == "federal_student_loans_minus_neutral")  %>% 
-    mutate(previous = 0) %>%
-    select(-current)
-  
-  previous_long<- bind_rows(previous_long, stloans)
-}
-
-comparison <- inner_join(current_long,
+# Join Contributions 
+contributions_comparison <- inner_join(current_long,
                          previous_long,
                          by = c('date', 'name')) %>% 
   rename(variable = name) %>% 
   as_tsibble(index = date) 
-
-
 comparison_long <-
   comparison %>% 
   pivot_longer(c(previous, current),
                names_to = 'source') 
 
+inputs_comparison <- inner_join(current_inputs_long,
+                                previous_inputs_long,
+                                by = c('date', 'name')) %>% 
+  rename(variable = name) %>% 
+  as_tsibble(index = date) 
+comparison_long <-
+  comparison %>% 
+  pivot_longer(c(previous, current),
+               names_to = 'source') 
+
+# Append 
+comparison <- bind_rows(inputs_comparison, contributions_comparison)
+
+# Define the "components", i.e. the data we want to include in our contributions comparison plots 
 components <- c(
-  "federal_purchases_contribution", 
+  "federal_purchases_contribution",
+  "federal_purchases", 
+  "federal_purchases_real", 
   "consumption_grants_contribution", 
+  "consumption_grants",
+  "consumption_grants_real",
   "investment_grants_contribution",
+  "investment_grants",
+  "investment_grants_real",
   "state_purchases_contribution", 
+  "state_purchases",
+  "state_purchases_real",
   "federal_non_corporate_taxes_contribution",
+  "federal_non_corporate_taxes",
+  "federal_non_corporate_taxes_real",
   "state_non_corporate_taxes_contribution", 
+  "state_non_corporate_taxes",
+  "state_non_corporate_taxes_real",
   "federal_corporate_taxes_contribution", 
+  "federal_corporate_taxes",
+  "federal_corporate_taxes_real",
   "supply_side_ira_contribution", 
+  "supply_side_ira",
+  "supply_side_ira_real",
   "state_corporate_taxes_contribution", 
+  "state_corporate_taxes",
+  "state_corporate_taxes_real",
   "federal_social_benefits_contribution", 
+  "federal_social_benefits",
+  "federal_social_benefits_real",
   "state_social_benefits_contribution", 
+  "state_social_benefits",
+  "state_social_benefits_real",
   "rebate_checks_contribution", 
+  "rebate_checks",
+  "rebate_checks_real",
   "rebate_checks_arp_contribution", 
+  "rebate_checks_arp",
+  "rebate_checks_arp_real",
   "federal_ui_contribution", 
+  "federal_ui",
+  "federal_ui_real",
   "state_ui_contribution", 
+  "state_ui",
+  "state_ui_real",
   "federal_subsidies_contribution",  
+  "federal_subsidies",
+  "federal_subsidies_real", 
   "federal_aid_to_small_businesses_arp_contribution", 
+  "federal_aid_to_small_businesses_arp",
+  "federal_aid_to_small_businesses_arp_real", 
   "federal_other_direct_aid_arp_contribution", 
+  "federal_other_direct_aid_arp",
+  "federal_other_direct_aid_arp_real", 
   "federal_other_vulnerable_arp_contribution", 
+  "federal_other_vulnerable_arp",
+  "federal_other_vulnerable_arp_real", 
   "federal_student_loans_contribution",
+  "federal_student_loans",
+  "federal_student_loans_real",
   "state_subsidies_contribution", 
+  "state_subsidies",
+  "state_subsidies_real", 
   "federal_health_outlays_contribution", 
+  "federal_health_outlays",
+  "federal_health_outlays_real", 
   "state_health_outlays_contribution", 
+  "state_health_outlays",
+  "state_health_outlays_real", 
   "federal_contribution",
+  "federal",
+  "federal_real",
   "state_contribution", 
+  "state",
+  "state_real", 
   "taxes_contribution", 
+  "taxes",
+  "taxes_real",
   "transfers_contribution",
+  "transfers",
+  "transfers_real",
   "fiscal_impact_measure"
 )
 
+# Define the comparison_ga function, which pulls in data (federal purchases contribution, for example) and generates a plot comparing the previous month's result to the current month's result
 comparison_ga <- function(.data, variable){
   plot <- .data %>% 
     filter(variable == {{ variable }}) %>% 

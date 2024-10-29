@@ -1053,10 +1053,12 @@ file_copy(path = 'Fiscal-Impact.html',
           new_path = glue('results/{month_year}/beta/Fiscal-Impact-{month_year}.html'),
           overwrite = TRUE)
 
-# Get update comparison html file 
- source("scripts/index_temp.R")
+stop()
 
- rmarkdown::render(input = 'update-comparison-ga.Rmd',
+# Get update comparison html file 
+source("scripts/index_temp.R")
+
+rmarkdown::render(input = 'update-comparison-markdown.Rmd',
                   output_file = glue('results/{month_year}/beta/update-comparison-{month_year}'),
                   clean = TRUE)
 
