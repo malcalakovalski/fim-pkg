@@ -67,7 +67,7 @@ minus_neutral <- function(x, # the data in question
                           rpgg, # real potential gdp growth,
                           dg # consumption deflator growth
 ) {
-  output <- x - lag(x) * (1 + rpgg + dg)
+  output <- x - lag(x) * (1 + rpgg) * (1 + dg)
   # This is the correct, calculation, but it affects minus_neutral
   #output <- x - (lag(x) * (1 + rpgg) * (1 + dg))
   # This optional line will make the 1970 Q1 entries equal a numeric value, rather
@@ -142,7 +142,7 @@ mpc <- function(x, mpc_matrix) {
 #'   gdp = c(29314, 29626, 29942, 30268, 30577)
 #' )
 scale_to_gdp <- function(x, gdp) {
-  output = 400 * x / lag(gdp)
+  output = 100*((1 + x / lag(gdp))^4-1)
   return(output)
 }
 

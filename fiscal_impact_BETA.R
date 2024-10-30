@@ -1053,7 +1053,7 @@ file_copy(path = 'Fiscal-Impact.html',
           new_path = glue('results/{month_year}/beta/Fiscal-Impact-{month_year}.html'),
           overwrite = TRUE)
 
-stop()
+
 
 # Get update comparison html file 
 source("scripts/index_temp.R")
