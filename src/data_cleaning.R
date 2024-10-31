@@ -92,7 +92,7 @@ create_consumption_grants <- function(
     select(date, data_series) %>%
     # Override historic entries of national_accounts using historical_overrides data
     mutate_where(
-      date >= yearquarter('2020 Q2') & date <= current_quarter,
+      date >= yearquarter('2020 Q3') & date <= current_quarter,
       data_series = historical_overrides$consumption_grants_override
     )
   
@@ -145,7 +145,7 @@ create_investment_grants <- function(
     rename(data_series = gfeigx) %>%
     # Override historic entries of national_accounts using historical_overrides data
     mutate_where(
-      date >= yearquarter('2020 Q2') & date <= current_quarter,
+      date >= yearquarter('2020 Q3') & date <= current_quarter,
       data_series = historical_overrides$investment_grants_override
     )
   
@@ -420,7 +420,7 @@ create_federal_social_benefits <- function(
     select(date, data_series) %>%
     # Override historic entries of national_accounts using historical_overrides data
     mutate_where(
-      date >= yearquarter('2020 Q2') & date <= current_quarter,
+      date >= yearquarter('2020 Q3') & date <= current_quarter,
       data_series = historical_overrides$federal_social_benefits_override
     ) %>%
     # Further overwrite by adding 203 to 2021 Q1
@@ -695,7 +695,7 @@ create_federal_aid_to_small_businesses_arp <- function(
     select(date, data_series) %>% # Keep only the 2 columns we need
   # Override historic entries of national_accounts using historical_overrides data
   mutate_where(
-    date >= yearquarter('2020 Q2') & date <= current_quarter,
+    date >= yearquarter('2020 Q3') & date <= current_quarter,
     data_series = historical_overrides$federal_aid_to_small_businesses_arp_override
   )
   
@@ -735,7 +735,7 @@ create_federal_other_direct_aid_arp <- function(
     select(date, data_series) %>% # Keep only the 2 columns we need
     # Override historic entries of national_accounts using historical_overrides data
     mutate_where(
-      date >= yearquarter('2020 Q2') & date <= current_quarter,
+      date >= yearquarter('2020 Q3') & date <= current_quarter,
       data_series = historical_overrides$federal_other_direct_aid_arp_override
     )
   
@@ -775,7 +775,7 @@ create_federal_other_vulnerable_arp <- function(
     select(date, data_series) %>% # Keep only the 2 columns we need
     # Override historic entries of national_accounts using historical_overrides data
     mutate_where(
-      date >= yearquarter('2020 Q2') & date <= current_quarter,
+      date >= yearquarter('2020 Q3') & date <= current_quarter,
       data_series = historical_overrides$federal_other_vulnerable_arp_override
     )
   
@@ -815,7 +815,7 @@ create_federal_student_loans <- function(
     select(date, data_series) %>% # Keep only the 2 columns we need
     # Override historic entries of national_accounts using historical_overrides data
     mutate_where(
-      date >= yearquarter('2020 Q2') & date <= current_quarter,
+      date >= yearquarter('2020 Q3') & date <= current_quarter,
       data_series = historical_overrides$federal_student_loans_override
     )
   
