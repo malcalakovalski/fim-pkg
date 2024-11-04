@@ -127,20 +127,18 @@ contributions_comparison <- inner_join(current_long,
                          by = c('date', 'name')) %>% 
   rename(variable = name) %>% 
   as_tsibble(index = date) 
-comparison_long <-
-  comparison %>% 
-  pivot_longer(c(previous, current),
-               names_to = 'source') 
+
 
 inputs_comparison <- inner_join(current_inputs_long,
                                 previous_inputs_long,
                                 by = c('date', 'name')) %>% 
   rename(variable = name) %>% 
   as_tsibble(index = date) 
+
 comparison_long <-
-  comparison %>% 
+  inputs_comparison %>%
   pivot_longer(c(previous, current),
-               names_to = 'source') 
+               names_to = 'source')
 
 # Append 
 comparison <- bind_rows(inputs_comparison, contributions_comparison)
@@ -260,7 +258,6 @@ comparison_ga <- function(.data, variable){
                                  'previous' = "darkgray"),
                       labels = c('Current', 'Previous')) 
 }
-
 
 
 comparison_nested <-

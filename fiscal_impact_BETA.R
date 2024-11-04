@@ -525,9 +525,9 @@ usna3 <- usna2 %>%
   
   #Overriding historical consumption and investment grant 
   # I think we override this twice???
-  mutate_where(date >= yearquarter('2020 Q3') & date <= current_quarter,
+  mutate_where(date >= yearquarter('2020 Q2') & date <= current_quarter,
                consumption_grants = historical_overrides$consumption_grants_override) %>% 
-  mutate_where(date >= yearquarter('2020 Q3') & date <= current_quarter, 
+  mutate_where(date >= yearquarter('2020 Q2') & date <= current_quarter, 
                investment_grants = historical_overrides$investment_grants_override) %>%
   
   #For the full period of the forecast (8 quarters out), replace CBO deflators with the ones from
@@ -594,7 +594,7 @@ projections <- # Merge forecast w BEA + CBO on the 'date' column,
   ) %>% 
   
   #apply historical_overrides for ARP 
-  mutate_where(date >= yearquarter('2020 Q3') & date <= current_quarter,
+  mutate_where(date >= yearquarter('2020 Q2') & date <= current_quarter,
                federal_other_direct_aid_arp = historical_overrides$federal_other_direct_aid_arp_override,
                federal_other_vulnerable_arp = historical_overrides$federal_other_vulnerable_arp_override,
                federal_social_benefits = historical_overrides$federal_social_benefits_override,
@@ -609,10 +609,10 @@ projections <- # Merge forecast w BEA + CBO on the 'date' column,
                federal_ui = 11, 
                state_ui = ui - federal_ui) %>%
   #apply historical_overrides for Supply Side IRA
-  mutate_where(date >= yearquarter('2020 Q3') & date <= current_quarter,
+  mutate_where(date >= yearquarter('2020 Q2') & date <= current_quarter,
                supply_side_ira = historical_overrides$supply_side_ira_override) %>%
   #apply historical_overrides for Federal Student Loans
-  mutate_where(date >= yearquarter('2020 Q3') & date <= current_quarter,
+  mutate_where(date >= yearquarter('2020 Q2') & date <= current_quarter,
                federal_student_loans = historical_overrides$federal_student_loans_override)
 
 
