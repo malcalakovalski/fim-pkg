@@ -135,13 +135,13 @@ inputs_comparison <- inner_join(current_inputs_long,
   rename(variable = name) %>% 
   as_tsibble(index = date) 
 
-comparison_long <-
-  inputs_comparison %>%
-  pivot_longer(c(previous, current),
-               names_to = 'source')
-
 # Append 
 comparison <- bind_rows(inputs_comparison, contributions_comparison)
+
+comparison_long <-
+  comparison %>%
+  pivot_longer(c(previous, current),
+               names_to = 'source')
 
 # Define the "components", i.e. the data we want to include in our contributions comparison plots 
 components <- c(
