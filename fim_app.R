@@ -1,15 +1,39 @@
+
+# Load the necessary packages 
 library(shiny)
 library(readxl)
 library(writexl)
 library(lubridate)
 library(zoo)
+library(shinyjs)
+library(rsconnect)
+library(shinycssloaders)
 
-data <- readxl::read_xlsx('shiny/data_temp.xlsx')
+
+# Connect to Hutchins Shiny.io account 
+# This is how we share the FIM App as a clickable link. 
+rsconnect::setAccountInfo(name='hutchins',
+                          token='1A972D7D4A560925E0382145E6EF8A1E',
+                          secret='ycz0u60XaZqGvSk/akHvL/Q9PAOryj4pyMykKk/a')
+
+#------- Load the FIM Data ---------# 
+
+# Read in the forecast sheet data 
+data <- readxl::read_xlsx('shiny/cache/forecast.xlsx')
+
+# Read in the Hutchins Center FIM Output (we use this to create the final chart, which compares the user's results with ours)
+load('shiny/cache/hutchins_fim.rda') 
+
+# Read in the National Accounts data and historical overrides 
 load('shiny/cache/usna.rda')
 load('shiny/cache/historical_overrides.rda')
+
+# Set the Current Quarter 
 current_quarter <- yearquarter(Sys.Date()) %>% yearquarter()
-current_quarter <- current_quarter - 2
-source("src/contributions.R")
+current_quarter <- current_quarter - 1
+
+# Source the Contributions R Script, which defines the functions that are used to calculate the FIM. 
+source("shiny/shiny_contributions.R")
 
 # Define Server Logic 
 server <- function(input, output) {
@@ -84,9 +108,9 @@ server <- function(input, output) {
                    federal_student_loans = historical_overrides$federal_student_loans_override)
   })
   
-  #####################################
-  # CALCULATE THE FIM USING USER DATA #
-  #####################################
+#####################################
+# CALCULATE THE FIM USING USER DATA #
+#####################################
   
   # Federal Purchases Contribution
   federal_purchases_contribution <- reactive({
@@ -152,7 +176,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$federal_non_corporate_taxes,
-      mpc_matrix = readRDS("cache/mpc_matrices/federal_non_corporate_taxes.rds"), 
+      mpc_matrix = readRDS("shiny/cache/mpc/federal_non_corporate_taxes.rds"), 
       dg = data$consumption_deflator_growth,
       rpgg = data$real_potential_gdp_growth, 
       gdp = data$gdp
@@ -166,7 +190,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$state_non_corporate_taxes,
-      mpc_matrix =  readRDS("cache/mpc_matrices/state_non_corporate_taxes.rds"),
+      mpc_matrix =  readRDS("shiny/cache/mpc/state_non_corporate_taxes.rds"),
       dg = data$consumption_deflator_growth,
       rpgg = data$real_potential_gdp_growth, 
       gdp = data$gdp
@@ -180,7 +204,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$federal_corporate_taxes,
-      mpc_matrix = readRDS("cache/mpc_matrices/federal_corporate_taxes.rds"),
+      mpc_matrix = readRDS("shiny/cache/mpc/federal_corporate_taxes.rds"),
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp
@@ -208,7 +232,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$state_corporate_taxes,
-      mpc_matrix = readRDS("cache/mpc_matrices/state_corporate_taxes.rds"),
+      mpc_matrix = readRDS("shiny/cache/mpc/state_corporate_taxes.rds"),
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp 
@@ -222,7 +246,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$federal_social_benefits, 
-      mpc_matrix =readRDS("cache/mpc_matrices/federal_social_benefits.rds"),
+      mpc_matrix =readRDS("shiny/cache/mpc/federal_social_benefits.rds"),
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp 
@@ -236,7 +260,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$state_social_benefits, 
-      mpc_matrix = readRDS("cache/mpc_matrices/state_social_benefits.rds"),
+      mpc_matrix = readRDS("shiny/cache/mpc/state_social_benefits.rds"),
       rpgg = data$real_potential_gdp_growth, 
       dg = data$consumption_deflator_growth, 
       gdp = data$gdp
@@ -250,7 +274,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$rebate_checks,
-      mpc_matrix = readRDS("cache/mpc_matrices/rebate_checks.rds"),
+      mpc_matrix = readRDS("shiny/cache/mpc/rebate_checks.rds"),
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp
@@ -264,7 +288,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$rebate_checks_arp,
-      mpc_matrix = readRDS("cache/mpc_matrices/rebate_checks_arp.rds"),
+      mpc_matrix = readRDS("shiny/cache/mpc/rebate_checks_arp.rds"),
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp
@@ -278,7 +302,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$federal_ui,
-      mpc_matrix = readRDS("cache/mpc_matrices/federal_ui.rds"),
+      mpc_matrix = readRDS("shiny/cache/mpc/federal_ui.rds"),
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp
@@ -292,7 +316,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$state_ui,
-      mpc_matrix = readRDS("cache/mpc_matrices/state_ui.rds"), 
+      mpc_matrix = readRDS("shiny/cache/mpc/state_ui.rds"), 
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp
@@ -306,7 +330,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$federal_subsidies, 
-      mpc_matrix = readRDS("cache/mpc_matrices/federal_subsidies.rds"), 
+      mpc_matrix = readRDS("shiny/cache/mpc/federal_subsidies.rds"), 
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp
@@ -321,7 +345,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$federal_aid_to_small_businesses_arp,
-      mpc_matrix = readRDS("cache/mpc_matrices/federal_aid_to_small_businesses_arp.rds"),
+      mpc_matrix = readRDS("shiny/cache/mpc/federal_aid_to_small_businesses_arp.rds"),
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp
@@ -335,7 +359,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$federal_other_direct_aid_arp, 
-      mpc_matrix = readRDS("cache/mpc_matrices/federal_other_direct_aid_arp.rds"), 
+      mpc_matrix = readRDS("shiny/cache/mpc/federal_other_direct_aid_arp.rds"), 
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp
@@ -350,7 +374,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$federal_other_vulnerable_arp,
-      mpc_matrix = readRDS("cache/mpc_matrices/federal_other_vulnerable_arp.rds"), 
+      mpc_matrix = readRDS("shiny/cache/mpc/federal_other_vulnerable_arp.rds"), 
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp
@@ -364,7 +388,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$federal_student_loans,
-      mpc_matrix =  readRDS("cache/mpc_matrices/federal_student_loans.rds"), 
+      mpc_matrix =  readRDS("shiny/cache/mpc/federal_student_loans.rds"), 
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp
@@ -378,7 +402,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$state_subsidies,
-      mpc_matrix =  readRDS("cache/mpc_matrices/state_subsidies.rds"), 
+      mpc_matrix =  readRDS("shiny/cache/mpc/state_subsidies.rds"), 
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp
@@ -392,7 +416,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$federal_health_outlays,
-      mpc_matrix =  readRDS("cache/mpc_matrices/federal_health_outlays.rds"), 
+      mpc_matrix =  readRDS("shiny/cache/mpc/federal_health_outlays.rds"), 
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp
@@ -407,7 +431,7 @@ server <- function(input, output) {
     
     contribution(
       x = data$state_health_outlays, 
-      mpc_matrix = readRDS("cache/mpc_matrices/state_health_outlays.rds"), 
+      mpc_matrix = readRDS("shiny/cache/mpc/state_health_outlays.rds"), 
       rpgg = data$real_potential_gdp_growth,
       dg = data$consumption_deflator_growth,
       gdp = data$gdp
@@ -479,7 +503,7 @@ server <- function(input, output) {
     
   })
   
-  # Create Data Frame 
+  # Create Contributions Data Frame 
   contributions <- reactive({
     req(
       federal_purchases_contribution(), consumption_grants_contribution(), 
@@ -528,53 +552,163 @@ server <- function(input, output) {
   
   # Get Date
   date <- reactive({
-    as.character(projections()$date)
+    projections()$date
   })
   
-  # Create FIM-Date Data frame
+  # Create Plot Data
   fiscal_impact_measure <- reactive({
     req(fim(), date())
     
     data <- data.frame(
       date(), 
-      fim()
-    ) 
-    
-    start <- which(data$date == "1999 Q4")
-    end <- which(data$date == "2026 Q2")
-    data %>% slice(start:end)
+      fim(), 
+      hutchins_fim$fiscal_impact_measure
+    ) %>% 
+      rename(
+        user_fim = fim..,
+        hutchins_fim = hutchins_fim.fiscal_impact_measure, 
+        date = date..
+      )  
   })
   
-  # Create Plot
+  # Create Plot 
   output$barPlot <- renderPlot({
     req(fiscal_impact_measure())
     
-    ggplot(fiscal_impact_measure(), aes(x = fiscal_impact_measure()$fim, y = fiscal_impact_measure()$date)) +
-      geom_bar(stat= "identity", fill = "violetred1") +
-      labs(title = "Your Fiscal Impact Measure", x = NULL, y = NULL) + 
-      scale_x_continuous(labels = function(x) paste0(x, "%")) +
-      scale_y_discrete(breaks = unique(fiscal_impact_measure()$date)[seq(1,length(unique(fiscal_impact_measure()$date)),by=8)]) +
-      coord_flip() + 
-      geom_hline(yintercept = 0) +
-      theme(text = element_text(family = "Roboto"),
-            plot.title = element_text(size = 24, face = 'bold'), 
-            axis.text.y = element_text(color = "black", size = 16),
-            axis.text.x = element_text(color ="black", size = 16), 
-            panel.background = element_rect(fill = "white"))
+    plot_data_long <- fiscal_impact_measure() %>% 
+      filter(date < current_quarter + 8) %>% 
+      filter(date >= yearquarter("2015 Q1")) %>% 
+      pivot_longer(cols = c(user_fim, hutchins_fim), 
+                   names_to = "Variable", 
+                   values_to = "Value") 
     
-  }) 
+    ggplot(plot_data_long, aes(x = date, y = Value, fill = Variable)) + 
+      geom_bar(stat = "identity", position = position_dodge()) + 
+      labs(title = "Your Fiscal Impact Measure", 
+           x = "Date") +
+      scale_fill_manual(values = c("#003A70", "#FF9E1B"), 
+                        labels = c("Hutchins Center FIM", "Your FIM")) +
+      scale_x_yearquarter(breaks = waiver(),
+                          date_breaks = '3 months',
+                          date_labels = "Q%q") +
+      facet_grid( ~ year(date),
+                  space = "free_x",
+                  scale = "free_x",
+                  switch = "x")  +
+      scale_y_continuous(labels = function(x) paste0(x, "%")) + 
+      theme(
+        # Format Legend 
+        legend.position = "top",
+        legend.text = element_text(size = 14), 
+        legend.title = element_blank(),
+        
+        # Format Axis Text and Labels
+        plot.title = element_blank(),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(), 
+        axis.text.x = element_text(size = 11, color = "black", face = "bold"), 
+        axis.text.y = element_text(size = 14, color = "black", face = "bold"),
+        strip.text.x = element_text(size = 14, color = "black"),
+        
+        
+        # Background Colors 
+        plot.background = element_rect(fill = "white"),
+        panel.background = element_rect(fill = "white")
+        
+        
+        )
+  
+    
+  })
+  
+  # Create Table Data
+  table_data <- reactive({
+    req(date(), fiscal_impact_measure(), transfers_contribution(), taxes_contribution(),
+        federal_contribution(), state_contribution())
+    
+    data <- data.frame(
+      fiscal_impact_measure(), 
+      federal_contribution(), 
+      state_contribution(),
+      transfers_contribution(), 
+      taxes_contribution()) %>% 
+      filter(date <= current_quarter + 8) %>% 
+      filter(date >= current_quarter) %>% 
+      mutate(date = as.character(date)) %>% 
+      select(-hutchins_fim)
+    
+    })
+
   
   # Create Table 
   output$dataTable <- renderTable({
-    req(fiscal_impact_measure())
-    data <- fiscal_impact_measure()
+    req(table_data()) 
     
-    start <- which(data$date == "2024 Q2")
-    end <- which(data$date == "2026 Q2")
-    data <- data %>% slice(start:end) %>% 
-      rename(Date = date.., FIM = fim..)
+    data <- table_data()
+    colnames(data) <- c("Date", "Your FIM", "Federal Purchases Contribution",
+                        "State Purchases Contribution", 
+                        "Transfers Contribution",
+                        "Taxes Contribution")
     
-    print(data)
+    data
+    
+  })
+  
+  # Define results loaded reactive function
+  resultsLoaded <- reactiveVal(FALSE) # define a reactive called resultsLoaded
+  observeEvent(input$file, {
+    # Mark the results as loaded
+    resultsLoaded(TRUE)
+  })
+  
+  # Define plot title 
+  output$results_plotTitle <- renderUI({
+    if (resultsLoaded()) {
+      tags$h3(style = "font-weight: bold; font-size: 24px;", "Your Fiscal Impact Measure")
+    } else {
+        NULL
+      }
+    })
+  
+  # Define table help text
+  # Defines help text describing the contents of the summary table that displays only when the results have loaded
+  output$results_helpText <- renderUI({
+    if (resultsLoaded()) {
+      # Show the help text only if results are loaded
+      print("The table below summarizes your results. 
+        It indicates the contribution to the FIM from taxes, transfers, and purchases.")
+    } else {
+      NULL
+    }
+  })
+  
+  # Table Title
+  # Defines a table  title that displays only when the results have loaded 
+  output$results_Title <- renderUI ({
+    if (resultsLoaded()) {
+      tags$h3(style = "font-weight: bold; font-size: 24px;", "Results Summary")
+    } else {
+      NULL
+    }
+  })
+  
+  # Reactive Allowing User to Download Contributions 
+  
+  output$downloadContributions <- downloadHandler(
+    filename = function() {
+      paste("fim_contributions_download", ".xlsx", sep = "")
+    },
+    content = function(file) {
+      write_xlsx(contributions(), file)  
+    }
+  )
+  
+  # Disable the contributions download button initially
+  shinyjs::disable("downloadContributions")
+  
+  # Observe file upload and enable the button if a file is uploaded
+  observeEvent(input$file, {
+    shinyjs::enable("downloadContributions")
   })
   
 }
@@ -583,7 +717,13 @@ server <- function(input, output) {
 ui <- fluidPage(
   
   # App title
-  titlePanel("Interactive"),
+  titlePanel("Hutchins Center FIM Interactive"),
+  helpText("The Hutchins Center FIM translates changes in taxes and spending at federal, state, 
+           and local levels into changes in aggregate demand, illustrating the effect of fiscal policy on real GDP growth.
+           We estimate the future path of the FIM based on forecasts for major tax and spending categories produced by 
+           the Congressional Budget Office, as well as our own assumptions about future fiscal policy. This interactive app 
+           allows you to input your own values for each of our primary variables and then calculates the FIM for our eight-quarter forecast period 
+           based on your inputs. "),
   
   # Sidebar layout with input and output definitions
   sidebarLayout(
@@ -591,24 +731,40 @@ ui <- fluidPage(
     # Sidebar panel for inputs
     sidebarPanel(
       
-      helpText("Click here to download the data"),
+      helpText('Click the button below to download our forecasts and MPCs for each of the primary FIM inputs. 
+               You can overwrite our numbers with your own. It is important that you edit only the values. 
+               Do not change the file structure or variable names.'),
       
       # Button to download the data
       downloadButton("downloadData", "Download"),
       
       # Display text directing users to re-upload their forecasts 
-      helpText("Re-upload the Excel file with your own forecasts."),
+      helpText("Re-upload the Excel file with your own forecasts. Your results will be displayed to the right."),
       
       # Generate file input for uploading excel data
       fileInput("file", label = NULL, accept = c(".xlsx")),  # Ensure .xlsx is specified
       
+      # Display text directing user to download contributions
+      helpText("Download an Excel file breaking down 
+                the contributions of each of your inputs to the total FIM. 
+               You must upload your data in order to access this file."), 
+      
+      useShinyjs(),
+      # Button to download contributions 
+      downloadButton("downloadContributions", "Download Contributions"), 
+      
+      
       # Set width
-      width = 4
+      width = 3
     ),
     
     # Main panel with spinner and plot output
     mainPanel(
-      plotOutput("barPlot", width = "1100px", height = "800px"),
+      uiOutput("results_plotTitle"),
+      withSpinner(plotOutput("barPlot", width = "1100px", height = "800px"), type = 1, color = "gray"),
+      
+      uiOutput("results_Title"),
+      uiOutput("results_helpText"),
       tableOutput("dataTable")
     )
   )
@@ -617,3 +773,5 @@ ui <- fluidPage(
 
 # Run the application
 shinyApp(ui = ui, server = server)
+
+

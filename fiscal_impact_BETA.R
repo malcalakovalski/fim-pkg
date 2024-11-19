@@ -567,6 +567,13 @@ forecast <- # Read in sheet with our forecasted values from the data folder
   mutate(date = yearquarter(date)) %>% #convert date to year-quarter format 
   tsibble::as_tsibble(index = date)
 
+# Store forecast sheet for Shiny App 
+forecast_shiny <- 
+  readxl::read_xlsx('data/forecast.xlsx', 
+                    sheet = 'forecast')
+openxlsx::write.xlsx(forecast_shiny, file = glue('shiny/cache/forecast.xlsx'), overwrite = TRUE)
+rm(forecast_shiny)
+
 # Remove all the unneeded columns from USNA before merging
 usna <- usna %>%
   select(
@@ -578,6 +585,7 @@ usna <- usna %>%
   )
 save(usna, file = 'shiny/cache/usna.rda')
 save(historical_overrides, file = 'shiny/cache/historical_overrides.rda')
+save(forecast, file = 'shiny/cache/forecast.rda')
   
 projections <- # Merge forecast w BEA + CBO on the 'date' column, 
   #filling in NA values with the corresponding value from the other data frame
@@ -1004,6 +1012,10 @@ contributions_df <- data.frame(
   fiscal_impact_4q_ma
 ) %>%
   as_tsibble(index = date)
+
+# Save the FIM to the Shiny Chache 
+hutchins_fim <- data.frame(date, fiscal_impact_measure)
+save(hutchins_fim, file = 'shiny/cache/hutchins_fim.rda')
 
 # Write the contributions and inputs to an Excel file in results/{month_year}/beta
 # TODO: This code only works if the beta/ directory already exists. 

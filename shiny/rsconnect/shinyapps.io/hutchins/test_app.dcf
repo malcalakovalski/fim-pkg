@@ -1,0 +1,10 @@
+name: test_app
+title:
+username: hutchins
+account: hutchins
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13381722
+bundleId: 9386317
+url: https://hutchins.shinyapps.io/test_app/
+version: 1

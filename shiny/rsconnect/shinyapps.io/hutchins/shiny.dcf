@@ -1,0 +1,10 @@
+name: shiny
+title:
+username: hutchins
+account: hutchins
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13377280
+bundleId: 9382353
+url: https://hutchins.shinyapps.io/shiny/
+version: 1

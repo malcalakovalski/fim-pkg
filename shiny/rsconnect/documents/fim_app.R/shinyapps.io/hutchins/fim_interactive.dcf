@@ -1,0 +1,13 @@
+name: fim_interactive
+title: fim_interactive
+username: hutchins
+account: hutchins
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13377522
+bundleId: 9382426
+url: https://hutchins.shinyapps.io/fim_interactive/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: data_temp.xlsx

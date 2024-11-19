@@ -1,0 +1,12 @@
+name: fim_interactive_app
+title: fim_interactive_app
+username: hutchins
+account: hutchins
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13360673
+bundleId:
+url: https://hutchins.shinyapps.io/fim_interactive_app/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
