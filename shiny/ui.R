@@ -1,5 +1,14 @@
+#############
+# Define UI #
+#############
 
-# Define UI 
+# Load the necessary packages 
+library(shinyjs)
+library(rsconnect)
+library(shinycssloaders)
+library(plotly)
+
+
 ui <- fluidPage(
   
   # Add reference to CSS file 
@@ -58,7 +67,7 @@ ui <- fluidPage(
     # Main panel with spinner and plot output
     mainPanel(
       uiOutput("results_plotTitle"),
-      withSpinner(plotOutput("barPlot", width = "100%", height = "auto"), 
+      withSpinner(plotlyOutput("fimPlot", width = "100%", height = "auto"), 
                   type = 1, color = "gray"),
       
       uiOutput("results_Title"),

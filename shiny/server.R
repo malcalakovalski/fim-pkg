@@ -1,5 +1,42 @@
+#######################
+# Define Server Logic #
+#######################
 
-# Define Server Logic 
+# Load the necessary packages 
+packages <- c(
+  "tidyverse", "tsibble", "lubridate", "glue", 
+  "TimTeaFan/dplyover", "zoo", "TTR", "fs", "gt", 
+  "openxlsx", "snakecase", "rlang", "BrookingsInstitution/ggbrookings"
+)
+librarian::shelf(packages)
+library(shinyjs)
+library(rsconnect)
+library(shinycssloaders)
+library(plotly)
+# Load all functions in package
+devtools::load_all() 
+
+
+#------- Load the FIM Data ---------# 
+# Read in the forecast sheet data 
+data <- readxl::read_xlsx('cache/forecast.xlsx')
+
+# Read in the Hutchins Center FIM Output (we use this to create the final chart, which compares the user's results with ours)
+load('cache/hutchins_fim.rda') 
+
+# Read in the National Accounts data and historical overrides 
+load('cache/usna.rda')
+load('cache/historical_overrides.rda')
+
+# Set the Current Quarter 
+current_quarter <- yearquarter(Sys.Date()) %>% yearquarter()
+current_quarter <- current_quarter - 1
+
+# Source the Contributions R Script, which defines the functions that are used to calculate the FIM. 
+source("shiny_contributions.R")
+
+
+
 server <- function(input, output, session) {
   
   # Download handler for the Excel file
@@ -487,6 +524,7 @@ server <- function(input, output, session) {
     )
     
     data.frame(
+      date = as.character(projections()$date), 
       federal_purchases_contribution = federal_purchases_contribution(),
       consumption_grants_contribution = consumption_grants_contribution(), 
       investment_grants_contribution = investment_grants_contribution(), 
@@ -511,7 +549,8 @@ server <- function(input, output, session) {
       federal_health_outlays_contribution = federal_health_outlays_contribution(), 
       state_health_outlays_contribution = state_health_outlays_contribution(),
       fim()
-    )
+    ) %>% 
+      filter(date > yearquarter("1999 Q4"))
   })
   
   # Get Date
@@ -536,7 +575,7 @@ server <- function(input, output, session) {
   })
   
   # Create Plot 
-  output$barPlot <- renderPlot({
+  output$fimPlot <- renderPlotly({
     req(fiscal_impact_measure())
     
     plot_data_long <- fiscal_impact_measure() %>% 
@@ -544,49 +583,68 @@ server <- function(input, output, session) {
       filter(date >= yearquarter("2015 Q1")) %>% 
       pivot_longer(cols = c(user_fim, hutchins_fim), 
                    names_to = "Variable", 
-                   values_to = "Value") 
+                   values_to = "Value") %>%
+      mutate(
+        tooltip_text = case_when( 
+          Variable == "user_fim" ~ paste("Your FIM:", round(Value, 2), "%"),
+          Variable == "hutchins_fim" ~ paste0(
+            str_trim(as.character(date)), "<br>",
+            str_trim(paste("Hutchins FIM:", round(Value, 2), "%")
+        ))
+      )
+      )
     
-    ggplot(plot_data_long, aes(x = date, y = Value, fill = Variable)) + 
-      geom_bar(stat = "identity", position = position_dodge()) + 
-      labs(title = "Your Fiscal Impact Measure", 
+    
+    
+    plotly <- ggplot(plot_data_long, aes(x = date, y = Value, fill = Variable, text = tooltip_text)) + 
+      geom_bar(stat = "identity", position = position_dodge2(width = NULL,
+                                                             preserve = "total",
+                                                             padding = 0.2,
+                                                             reverse = FALSE)) + 
+      labs(title = "", 
            x = "Date") +
       scale_fill_manual(values = c("#003A70", "#FF9E1B"), 
-                        labels = c("Hutchins Center FIM", "Your FIM")) +
-      scale_x_yearquarter(breaks = waiver(),
-                          date_breaks = '3 months',
-                          date_labels = "Q%q") +
-      facet_grid(~ year(date),
-                 space = "free_x",
-                 scale = "free_x",
-                 switch = "x")  +
+                        labels = c("User FIM", "Hutchins FIM")) +
       scale_y_continuous(labels = function(x) paste0(x, "%")) + 
+      scale_x_yearquarter(breaks = waiver(),
+                          date_breaks = '12 months',
+                          date_labels = "'%y") +
       theme(
         # Format Legend 
         legend.position = "top",
-        legend.text = element_text(size = 14), 
+        legend.text = element_blank(), 
         legend.title = element_blank(),
         
         # Format Axis Text and Labels
         plot.title = element_blank(),
         axis.title.y = element_blank(),
         axis.title.x = element_blank(), 
-        axis.text.x = element_text(size = 11, color = "black", face = "bold"), 
-        axis.text.y = element_text(size = 14, color = "black", face = "bold"),
-        strip.text.x = element_text(size = 14, color = "black"),
+        axis.text.x = element_text(size = 10, color = "black", face = "bold"), 
+        axis.text.y = element_text(size = 10, color = "black", face = "bold"),
         
         # Background Colors 
         plot.background = element_rect(fill = "white"),
-        panel.background = element_rect(fill = "white")
+        panel.background = element_rect(fill= "white")
+      ) 
+    
+    ggplotly(plotly, tooltip = "text") %>% 
+      layout(hovermode = "x unified",
+             hoverlabel = list(
+               font = list(size = 12),
+               align = "right",
+               yanchor = "top",
+               y = 1),
+             legend = list(
+               title = list(text = 'Variables'),  # Optionally add a title to the legend
+               font = list(size = 12)             # Adjust font size of legend text
+             )
       )
-  },
-  width = function() {
-    session$clientData$output_barPlot_width  # Get the dynamic width of the plot container
-  },
-  height = function() {
-    session$clientData$output_barPlot_width * 0.75  # Maintain a 4:3 aspect ratio (adjust as needed)
-  }
-  )
+    
+  })
   
+  
+
+
   
   # Create Table Data
   table_data <- reactive({

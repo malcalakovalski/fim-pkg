@@ -27,6 +27,12 @@ mpc <- function(x, mpc_matrix) {
   return(output)
 }
 
+scale_to_gdp <- function(x, gdp) {
+  output = 100*((1 + x / lag(gdp))^4-1)
+  return(output)
+}
+
+
 contribution <- function(x, mpc_matrix = NULL, rpgg, dg, gdp) {
   # If mpc_matrix is not NULL, apply the mpc function first
   if (!is.null(mpc_matrix)) {
