@@ -1,6 +1,6 @@
 
 # Define Server Logic 
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   # Download handler for the Excel file
   output$downloadData <- downloadHandler(
@@ -555,10 +555,10 @@ server <- function(input, output) {
       scale_x_yearquarter(breaks = waiver(),
                           date_breaks = '3 months',
                           date_labels = "Q%q") +
-      facet_grid( ~ year(date),
-                  space = "free_x",
-                  scale = "free_x",
-                  switch = "x")  +
+      facet_grid(~ year(date),
+                 space = "free_x",
+                 scale = "free_x",
+                 switch = "x")  +
       scale_y_continuous(labels = function(x) paste0(x, "%")) + 
       theme(
         # Format Legend 
@@ -574,16 +574,19 @@ server <- function(input, output) {
         axis.text.y = element_text(size = 14, color = "black", face = "bold"),
         strip.text.x = element_text(size = 14, color = "black"),
         
-        
         # Background Colors 
         plot.background = element_rect(fill = "white"),
         panel.background = element_rect(fill = "white")
-        
-        
       )
-    
-    
-  })
+  },
+  width = function() {
+    session$clientData$output_barPlot_width  # Get the dynamic width of the plot container
+  },
+  height = function() {
+    session$clientData$output_barPlot_width * 0.75  # Maintain a 4:3 aspect ratio (adjust as needed)
+  }
+  )
+  
   
   # Create Table Data
   table_data <- reactive({

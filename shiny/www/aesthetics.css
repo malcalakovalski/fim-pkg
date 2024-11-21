@@ -1,0 +1,100 @@
+/* Get a fancy font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* This is for the text underneath the plot */
+.small-text {
+    font-size: 12px; /* Adjust the size as needed */
+    color: #676666; /* Set text color */
+    text-align: left; /* Align text to the left */
+    margin-top: 5px;
+    margin: auto;
+    font-weight: 400;
+    font-style: italic;
+    margin-bottom: 5px; /* Add space below the smaller text */
+}
+
+/* Change header text to imported font */
+h2 {
+    font-family: 'Inter', sans-serif;
+    background-color: #00649f;
+    color: #FFFFFF;
+    width: 100%;
+    padding: 30px;
+    text-align: center;
+    margin: 0 auto;
+    font-weight: 700;
+    font-style: bold;
+}
+
+/* Remove or reduce bottom margin from the entire file input container */
+.form-group.shiny-input-container {
+    margin-bottom: 5px; /* Reduce space below the entire container */
+    font-size: 14px;
+}
+
+/* Optional: Adjust padding/margin for specific inner elements */
+.input-group {
+    margin-bottom: 0; /* Ensure no extra margin inside the input group */
+    font-size: 14px;
+}
+
+/* Optional: Hide or adjust progress bar space (if not needed) */
+#file_progress {
+    margin-top: 0;
+    margin-bottom: 0;
+    height: 0; /* Optionally set to 0 if you don't want the bar at all */
+}
+
+
+/* Make text visible on inputs */
+.shiny-input-container {
+    color: #474747;
+    margin-bottom: 0px;
+}
+
+/* Additional styling for the histogram plot output */
+.plot-container {
+    width: 90%; /* Ensure the plot takes the full width of the container */
+}
+
+/* Flex container for source text and logo */
+.flex-container {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-top: 10px; 
+}
+
+#barPlot {
+    padding: 20px; /* Adjust padding as needed */
+}
+
+.flex-text {
+    flex: 3; 
+    margin: 0; 
+}
+
+.flex-logo {
+    flex: 1; 
+    width: 100px; 
+    margin-left: 10px; 
+}
+
+/* Ensure the plot container is responsive */
+#plot-container {
+    width: 100%; /* Full width of the parent container */
+    height: auto; /* Adjust height dynamically */
+    max-width: 90vw; /* Optional: Limit the maximum width */
+    max-height: 75vh; /* Optional: Limit the maximum height */
+}
+
+/* Optional: Style the plot for better visuals */
+#barPlot {
+    width: 100%; /* Ensure the plot fills its container */
+    height: 100%; /* Dynamic height */
+    display: block; /* Fix layout issues */
+}

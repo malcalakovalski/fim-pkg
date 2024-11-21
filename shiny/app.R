@@ -2,7 +2,6 @@
 # FIM-teractive App #
 #####################
 
-
 # Load the necessary packages 
 library(shiny)
 library(readxl)
