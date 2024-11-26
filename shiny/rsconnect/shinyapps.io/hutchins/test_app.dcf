@@ -1,10 +1,10 @@
 name: test_app
-title:
+title: test_app
 username: hutchins
 account: hutchins
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
-appId: 13381722
-bundleId: 9386317
+appId: 13427681
+bundleId: 9415571
 url: https://hutchins.shinyapps.io/test_app/
 version: 1

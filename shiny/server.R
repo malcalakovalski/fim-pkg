@@ -1,20 +1,22 @@
 #######################
 # Define Server Logic #
 #######################
-
-# Load the necessary packages 
-packages <- c(
-  "tidyverse", "tsibble", "lubridate", "glue", 
-  "TimTeaFan/dplyover", "zoo", "TTR", "fs", "gt", 
-  "openxlsx", "snakecase", "rlang", "BrookingsInstitution/ggbrookings"
-)
-librarian::shelf(packages)
 library(shinyjs)
 library(rsconnect)
 library(shinycssloaders)
 library(plotly)
-# Load all functions in package
-devtools::load_all() 
+library(readxl)
+library(shiny)
+library(writexl)
+library(readxl)
+library(glue)
+library(zoo)
+library(lubridate)
+library(tsibble)
+library(tidyr)
+
+source('shiny_functions.R')
+
 
 
 #------- Load the FIM Data ---------# 
@@ -38,6 +40,8 @@ source("shiny_contributions.R")
 
 
 server <- function(input, output, session) {
+  
+  
   
   # Download handler for the Excel file
   output$downloadData <- downloadHandler(
@@ -574,77 +578,112 @@ server <- function(input, output, session) {
       )  
   })
   
-  # Create Plot 
-  output$fimPlot <- renderPlotly({
-    req(fiscal_impact_measure())
-    
-    plot_data_long <- fiscal_impact_measure() %>% 
-      filter(date < current_quarter + 8) %>% 
-      filter(date >= yearquarter("2015 Q1")) %>% 
-      pivot_longer(cols = c(user_fim, hutchins_fim), 
-                   names_to = "Variable", 
-                   values_to = "Value") %>%
-      mutate(
-        tooltip_text = case_when( 
-          Variable == "user_fim" ~ paste("Your FIM:", round(Value, 2), "%"),
-          Variable == "hutchins_fim" ~ paste0(
-            str_trim(as.character(date)), "<br>",
-            str_trim(paste("Hutchins FIM:", round(Value, 2), "%")
-        ))
-      )
-      )
-    
-    
-    
-    plotly <- ggplot(plot_data_long, aes(x = date, y = Value, fill = Variable, text = tooltip_text)) + 
-      geom_bar(stat = "identity", position = position_dodge2(width = NULL,
-                                                             preserve = "total",
-                                                             padding = 0.2,
-                                                             reverse = FALSE)) + 
-      labs(title = "", 
-           x = "Date") +
-      scale_fill_manual(values = c("#003A70", "#FF9E1B"), 
-                        labels = c("User FIM", "Hutchins FIM")) +
-      scale_y_continuous(labels = function(x) paste0(x, "%")) + 
-      scale_x_yearquarter(breaks = waiver(),
-                          date_breaks = '12 months',
-                          date_labels = "'%y") +
-      theme(
-        # Format Legend 
-        legend.position = "top",
-        legend.text = element_blank(), 
-        legend.title = element_blank(),
-        
-        # Format Axis Text and Labels
-        plot.title = element_blank(),
-        axis.title.y = element_blank(),
-        axis.title.x = element_blank(), 
-        axis.text.x = element_text(size = 10, color = "black", face = "bold"), 
-        axis.text.y = element_text(size = 10, color = "black", face = "bold"),
-        
-        # Background Colors 
-        plot.background = element_rect(fill = "white"),
-        panel.background = element_rect(fill= "white")
-      ) 
-    
-    ggplotly(plotly, tooltip = "text") %>% 
-      layout(hovermode = "x unified",
-             hoverlabel = list(
-               font = list(size = 12),
-               align = "right",
-               yanchor = "top",
-               y = 1),
-             legend = list(
-               title = list(text = 'Variables'),  # Optionally add a title to the legend
-               font = list(size = 12)             # Adjust font size of legend text
-             )
-      )
-    
+  # Define results loaded reactive function
+  resultsLoaded <- reactiveVal(FALSE) # define a reactive called resultsLoaded
+  observeEvent(input$file, {
+    # Mark the results as loaded
+    resultsLoaded(TRUE)
   })
   
+  # Create FIM Plot in the Main Panel 
+  output$fimPlot <- renderPlotly({
+    
+    if(!resultsLoaded()){
+      
+    # Define FIM Plot to display initially 
+    data <- hutchins_fim %>% 
+      filter(date > yearquarter("1999 Q4")) %>%
+      filter(date < current_quarter + 9) %>% 
+      mutate(date = as.character(date)) 
+    
+    plot1 <- plot_ly() %>% 
+      add_trace(data, x = ~data$date, y = ~data$fiscal_impact_measure, type = "bar",
+                name = "Hutchins Center FIM", marker = list(color = "#e4649c"),
+                hovertemplate = 'Fiscal Impact: %{y:.2f}%<extra></extra>') %>% 
+      add_trace(data, x = ~data$date, y = ~data$fiscal_impact_4q_ma, type = "scatter",
+                mode = 'lines+markers',
+                name = "4 Quarter Moving Average", marker = list(color = "black"), line = list(color = "black"),
+                hovertemplate = 'Four Quarter Moving Average: %{y:.2f}%<extra></extra>') %>% 
+      layout(
+        # X Axis 
+        xaxis = list(
+          title = "",
+          showspikes = TRUE, 
+          spikemode = "across", 
+          spikecolor = "black",
+          spikethickness = 1,
+          spikedash = "solid",
+          
+          tickmode = 'linear',
+          tick0 = "2000 Q1", 
+          dtick = 4
+
+          ),
+        
+        # Y Axis 
+        yaxis = list(
+          title = "",
+          ticksuffix = "%"
+        ), 
+        
+        # Format Hover Line 
+        hovermode = "x unified", # displays a single label for all data points that share the same x coordinate
+        
+        
+        # Format Data Label 
+        hoverlabel = list(
+          bordercolor = 'transparent', # makes the border of the hover label transparent 
+          font = list(size = 12)  # Change size of the hover label text
+        )
+        
+      )
+    } else {
   
-
-
+  # Create results plot with user defined inputs 
+    
+    data <- fiscal_impact_measure() %>% 
+      filter(date < current_quarter + 9) %>% 
+      filter(date >= yearquarter("2015 Q1")) %>% 
+      mutate(date = as.character(date))
+    
+    plot2 <- plot_ly() %>% 
+      add_trace(data, x = ~data$date, y = ~data$user_fim, type = "bar", 
+                name = "Your FIM", marker = list(color = "#003A70"),
+                hovertemplate = 'Your FIM: %{y:.2f}%<extra></extra>') %>% 
+      add_trace(data, x = ~data$date, y = ~data$hutchins_fim, type = "bar", 
+                name = "Hutchins FIM", marker = list(color = "#FF9E1B"),
+                hovertemplate = 'Hutchins FIM: %{y:.2f}%<extra></extra>') %>% 
+      layout(
+        
+        # X Axis 
+        xaxis = list(
+          title = "",
+          showspikes = TRUE, 
+          spikemode = "across", 
+          spikecolor = "black",
+          spikethickness = 1,
+          spikedash = "solid"
+          
+          ), 
+        
+        # Y Axis 
+        yaxis = list(
+          title = "",
+          ticksuffix = "%"
+          ), 
+        
+        # Format Hover Line 
+        hovermode = "x unified",
+        
+        # Format Data Label 
+        hoverlabel = list(
+            bordercolor = 'transparent'
+          )
+        
+        )
+  }
+        
+  })
   
   # Create Table Data
   table_data <- reactive({
@@ -679,19 +718,24 @@ server <- function(input, output, session) {
     
   })
   
-  # Define results loaded reactive function
-  resultsLoaded <- reactiveVal(FALSE) # define a reactive called resultsLoaded
-  observeEvent(input$file, {
-    # Mark the results as loaded
-    resultsLoaded(TRUE)
-  })
-  
   # Define plot title 
   output$results_plotTitle <- renderUI({
-    if (resultsLoaded()) {
+    if (resultsLoaded() == TRUE) {
       tags$h3(style = "font-weight: bold; font-size: 24px;", "Your Fiscal Impact Measure")
+    } else if (resultsLoaded() == FALSE) {
+      tags$h3(style = "font-weight: bold; font-size: 24px;", "Hutchins Center Fiscal Impact Measure")
     } else {
-      NULL
+      print("")
+    }
+  })
+  
+  # Define plot help text 
+  output$chart_helpText <- renderUI({
+    if(!resultsLoaded()) {
+      print("The chart below displays the official Hutchins Center FIM - the contribution
+            of federal, state, and local fiscal policy to GDP growth. Use the panel on the
+            left hand side of the screen to input your own data and this graph will be regenerated 
+            based on your inputs.")
     }
   })
   

@@ -1014,7 +1014,7 @@ contributions_df <- data.frame(
   as_tsibble(index = date)
 
 # Save the FIM to the Shiny Chache 
-hutchins_fim <- data.frame(date, fiscal_impact_measure)
+hutchins_fim <- data.frame(date, fiscal_impact_measure, fiscal_impact_4q_ma)
 save(hutchins_fim, file = 'shiny/cache/hutchins_fim.rda')
 
 # Write the contributions and inputs to an Excel file in results/{month_year}/beta

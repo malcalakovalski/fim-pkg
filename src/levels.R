@@ -406,14 +406,21 @@ data <- data.frame(
   state_levels,
   taxes_levels,
   transfers_levels,
-  federal_health_outlays_contribution_levels,
-  state_health_outlays_contribution_levels,
-  federal_subsidies_contribution_levels,
-  state_subsidies_contribution_levels,
-  federal_ui_contribution_levels,
-  state_ui_contribution_levels,
-  rebate_checks_arp_contribution_levels,
-  rebate_checks_contribution_levels
+  federal_social_benefits_contribution_levels,  
+    state_social_benefits_contribution_levels, 
+    rebate_checks_contribution_levels,
+    rebate_checks_arp_contribution_levels, 
+    federal_ui_contribution_levels,  
+    state_ui_contribution_levels, 
+    federal_subsidies_contribution_levels, 
+    federal_aid_to_small_businesses_arp_contribution_levels,  
+    federal_other_direct_aid_arp_contribution_levels,
+    federal_other_vulnerable_arp_contribution_levels,
+    federal_student_loans_contribution_levels,
+    state_subsidies_contribution_levels,
+    federal_health_outlays_contribution_levels,
+    state_health_outlays_contribution_levels
+
 ) %>% 
   filter(
     date >= start_quarter - 2 & date <= current_quarter + 8 

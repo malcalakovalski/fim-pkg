@@ -2,12 +2,21 @@
 # Define UI #
 #############
 
-# Load the necessary packages 
 library(shinyjs)
 library(rsconnect)
 library(shinycssloaders)
 library(plotly)
+library(readxl)
+library(shiny)
+library(writexl)
+library(readxl)
+library(glue)
+library(zoo)
+library(lubridate)
+library(tsibble)
+library(tidyr)
 
+source('shiny_functions.R')
 
 ui <- fluidPage(
   
@@ -23,7 +32,7 @@ ui <- fluidPage(
            We estimate the future path of the FIM based on forecasts for major tax and spending categories produced by 
            the Congressional Budget Office, as well as our own assumptions about future fiscal policy. This interactive app 
            allows you to input your own values for each of our primary variables and then calculates the FIM for our eight-quarter forecast period 
-           based on your inputs. "),
+           based on your inputs."),
   
   # Sidebar layout with input and output definitions
   sidebarLayout(
@@ -67,10 +76,11 @@ ui <- fluidPage(
     # Main panel with spinner and plot output
     mainPanel(
       uiOutput("results_plotTitle"),
+      uiOutput("chart_helpText"), 
       withSpinner(plotlyOutput("fimPlot", width = "100%", height = "auto"), 
                   type = 1, color = "gray"),
       
-      uiOutput("results_Title"),
+
       uiOutput("results_helpText"),
       tableOutput("dataTable")
     )

@@ -1,0 +1,27 @@
+Package: FIMApp
+Type: ShinyApp
+Title: "An Interactive Version of the Hutchins Center FIM"
+Version: 1.0.0
+Author: Georgia Nabors <gnabors@brookings.edu>
+Description: This app provides an interactive interface for exploring data visualizations and metrics.
+Depends: R (>= 4.4.2)
+Imports:
+    shiny,
+    ggplot2,
+    plotly,
+    dplyr,
+    tidyr, 
+    tsibble, 
+    fim, 
+    lubridate, 
+    glue, 
+    zoo, 
+    rlang, 
+    snakecase, 
+    shinyjs, 
+    shinycssloaders, 
+    readxl, 
+    writexl
+License: Brookings
+Encoding: UTF-8
+LazyData: true

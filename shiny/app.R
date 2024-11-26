@@ -1,19 +1,22 @@
 #####################
 # FIM-teractive App #
 #####################
-# Load the necessary packages 
-packages <- c(
-  "tidyverse", "tsibble", "lubridate", "glue", 
-  "TimTeaFan/dplyover", "zoo", "TTR", "fs", "gt", 
-  "openxlsx", "snakecase", "rlang", "BrookingsInstitution/ggbrookings"
-)
-librarian::shelf(packages)
+
 library(shinyjs)
 library(rsconnect)
 library(shinycssloaders)
 library(plotly)
-# Load all functions in package
-devtools::load_all() 
+library(readxl)
+library(shiny)
+library(writexl)
+library(readxl)
+library(glue)
+library(zoo)
+library(lubridate)
+library(tsibble)
+library(tidyr)
+
+source('shiny_functions.R')
 
 
 # Connect to Hutchins Shiny.io account 
@@ -31,4 +34,4 @@ source("shiny/ui.R")
 # Run the application
 shinyApp(ui = ui, server = server)
 
-rsconnect::deployApp("shiny/")
+rsconnect::deployApp("shiny/", appName = "test_app")
