@@ -583,10 +583,9 @@ usna <- usna %>%
     -wages_lost_assistance,
     -nonprofit_provider_relief_fund
   )
+
 save(usna, file = 'shiny/cache/usna.rda')
-save(historical_overrides, file = 'shiny/cache/historical_overrides.rda')
-save(forecast, file = 'shiny/cache/forecast.rda')
-  
+
 projections <- # Merge forecast w BEA + CBO on the 'date' column, 
   #filling in NA values with the corresponding value from the other data frame
   coalesce_join(usna, forecast, by = 'date') %>%  
@@ -622,9 +621,6 @@ projections <- # Merge forecast w BEA + CBO on the 'date' column,
   #apply historical_overrides for Federal Student Loans
   mutate_where(date >= yearquarter('2020 Q2') & date <= current_quarter,
                federal_student_loans = historical_overrides$federal_student_loans_override)
-
-
-openxlsx::write.xlsx(projections, file = glue('projections_check.xlsx'))
 
 # The `projections` data frame, at this point, contains all of the data we need
 # in order to calculate the FIM. We streamline it to remove all the unneeded columns.

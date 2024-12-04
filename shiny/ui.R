@@ -1,22 +1,8 @@
 #############
 # Define UI #
 #############
-
-library(shinyjs)
-library(rsconnect)
-library(shinycssloaders)
-library(plotly)
-library(readxl)
-library(shiny)
-library(writexl)
-library(readxl)
-library(glue)
-library(zoo)
-library(lubridate)
-library(tsibble)
-library(tidyr)
-
-source('shiny_functions.R')
+packages <- c("shiny", "shinyjs", "plotly", "shinycssloaders")
+librarian::shelf(packages)
 
 ui <- fluidPage(
   
@@ -25,14 +11,19 @@ ui <- fluidPage(
   
   # App title
   titlePanel("Hutchins Center FIM Interactive", windowTitle = "Hutchins Center FIM Interactive"),
-  helpText(style = "font-size: 14px; color: #676666; text-align: left;
-           margin-top: 10px; margin-bottom: 15px; margin-left: 30px; margin-right: 30px", 
-           "The Hutchins Center Fiscal Impact Measure (FIM) translates changes in taxes and spending at federal, state, 
+  helpText(HTML("<div style ='font-size: 16px; color: #676666; text-align: left;
+           margin-top: 10px; margin-bottom: 15px; margin-left: 30px; margin-right: 30px'>
+           The <a href='https://www.brookings.edu/articles/hutchins-center-fiscal-impact-measure/'> Hutchins Center Fiscal Impact Measure (FIM)</a>
+           translates changes in taxes and spending at federal, state, 
            and local levels into changes in aggregate demand, illustrating the effect of fiscal policy on real GDP growth.
-           We estimate the future path of the FIM based on forecasts for major tax and spending categories produced by 
-           the Congressional Budget Office, as well as our own assumptions about future fiscal policy. This interactive app 
-           allows you to input your own values for each of our primary variables and then calculates the FIM for our eight-quarter forecast period 
-           based on your inputs."),
+           We estimate the future path of the FIM based on forecasts produced by 
+           the Congressional Budget Office and our own assumptions about future fiscal policy. This interactive webpage
+           allows you to upload your own forecasts for each of the primary FIM components and then calculates the FIM for our eight-quarter forecast period 
+           based on your inputs. You can also change our assumed <a href='https://www.brookings.edu/articles/the-hutchins-centers-fiscal-impact-measure/'>
+           marginal propensities to consume (MPCs)</a>, which indicate the size of the consumption response to changes in taxes or benefits and the time it takes to unfold. </div>")),
+  
+  # FIX ME: Add a date of publication
+  # FIX ME: Add yellow text that says research
   
   # Sidebar layout with input and output definitions
   sidebarLayout(
@@ -42,7 +33,7 @@ ui <- fluidPage(
       
       helpText(style = "font-size: 14x; color: #676666; text-align: left;
                margin-top: 0px; margin-bottom: 10px; margin-left: 5px; margin-right: 5px", 
-               'Click the button below to download our forecasts and MPCs for each of the primary FIM inputs. 
+               'Click the button below to download our forecasts and MPCs for each of the main FIM inputs.
                You can overwrite our numbers with your own. It is important that you edit only the values. 
                Do not change the file structure or variable names.'),
       
@@ -80,8 +71,7 @@ ui <- fluidPage(
       withSpinner(plotlyOutput("fimPlot", width = "100%", height = "auto"), 
                   type = 1, color = "gray"),
       
-
-      uiOutput("results_helpText"),
+      uiOutput("results_Title"),
       tableOutput("dataTable")
     )
   )

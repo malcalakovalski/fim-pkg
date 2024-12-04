@@ -2,22 +2,7 @@
 # FIM-teractive App #
 #####################
 
-library(shinyjs)
-library(rsconnect)
-library(shinycssloaders)
-library(plotly)
-library(readxl)
 library(shiny)
-library(writexl)
-library(readxl)
-library(glue)
-library(zoo)
-library(lubridate)
-library(tsibble)
-library(tidyr)
-
-source('shiny_functions.R')
-
 
 # Connect to Hutchins Shiny.io account 
 # This is how we share the FIM App as a clickable link. 
@@ -34,4 +19,4 @@ source("shiny/ui.R")
 # Run the application
 shinyApp(ui = ui, server = server)
 
-rsconnect::deployApp("shiny/", appName = "test_app")
+rsconnect::deployApp("shiny/", appName = "fim_interactive")
