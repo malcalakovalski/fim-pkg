@@ -6,14 +6,14 @@
 packages <- c("shiny", "tidyr", "dplyr", "lubridate", "tsibble", "zoo", "glue", "readxl", "writexl", "shinyjs", "plotly", "shinycssloaders")
 librarian::shelf(packages)
 
-# Source shiny_functions.R, a helper script writing some of the functions contained in the FIM package rather than loading the package. 
+# Source shiny_functions.R, a helper script re-writing some of the functions contained in the FIM package rather than loading the package. 
 source('src/shiny_functions.R')
 
 #------- Load the FIM Data ---------# 
 # Read in the forecast sheet data 
 data <- readxl::read_xlsx('cache/forecast.xlsx')
 
-# Read in the Hutchins Center FIM Output (we use this to create the final chart, which compares the user's results with ours)
+# Read in the Hutchins Center FIM output (we use this to create the final chart, which compares the user's results with ours)
 load('cache/hutchins_fim.rda') 
 
 # Read in the National Accounts data and historical overrides 
@@ -36,19 +36,19 @@ source("src/shiny_contributions.R")
 
 server <- function(input, output, session) {
   
-  # Download handler for the Excel file
+  # Create download handler for the Excel file containing forecast data and MPCs
   output$downloadData <- downloadHandler(
     filename = function() {
       paste("fim_data_download", ".xlsx", sep = "")
     },
     content = function(file) {
       write_xlsx(list(
-        "FIM Data" = data, 
-        "MPCs" = mpcs), file)  
+        "FIM Data" = data,  # Sheet 1: Forecasts pulled from the forecast sheet
+        "MPCs" = mpcs), file) # Sheet 2: MPC dataset created by shiny/src/get_mpcs.R
     }
   )
   
-  # Reactive expression to retrieve the user-uploaded FIM data
+  # Reactive expression to retrieve the user-uploaded FIM data 
   forecast_user <- reactive({
     req(input$file)
     
@@ -85,6 +85,7 @@ server <- function(input, output, session) {
                        type = "error", duration = 30)
       NULL 
     })
+    
   })
   
   # Reactive expression to retrieve the user-uploaded MPCs
@@ -100,13 +101,13 @@ server <- function(input, output, session) {
       
   })
   
-  # Create projections dataset
+  # Create projections dataset that joins national accounts, forecasts, and historical overrides 
   projections <- reactive({
     req(forecast_user())
     ui_forecast <- data.frame(forecast_user())
     
     # Join the NIPAs (contained in the cache folder) with the user in
-    coalesce_join(usna, ui_forecast, by = 'date') %>%  # Ensure 'usna' is defined
+    coalesce_join(usna, ui_forecast, by = 'date') %>% 
       mutate(across(where(is.numeric), ~ coalesce(.x, 0)))%>% # Coalesce NA's to 0 for numeric values
       
       # Replace missing values with 0 
@@ -145,6 +146,7 @@ server <- function(input, output, session) {
   #########################
   # GENERATE MPC MATRICES #
   #########################
+  # FIX ME: We need to make this more efficient, we should not be re-writing all the matrices 
   
   # Federal Non-Corporate Taxes MPC 
   federal_non_corporate_taxes_mpc <- reactive({

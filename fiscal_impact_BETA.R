@@ -633,9 +633,6 @@ projections <- projections %>%
   )
 
 
-
-
-
 ######################################################################################
 # This is the point where we go from generating a data frame to actually calculating the FIM
 ######################################################################################
