@@ -145,7 +145,7 @@ counterfactual_levels <- function(x, #the data in question
                                   cumprod #cumulative product of deflator and real potential gdp growth 
                                   #calculated from cumprod function defined in previous function 
 ) {
-  output <- x- x[base_position] * (cumprod+1)
+  output <- x- x[base_position] * (cumprod)
   return(output)
 }
 
