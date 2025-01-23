@@ -84,7 +84,7 @@ historical_overrides <- import_historical_overrides()
 current_quarter <- historical_overrides %>% slice_max(date) %>% pull(date)
 
 # Source the module that creates the test data columns used in the FIM
-source("src/data_cleaning_beta.R")
+source("src/data_cleaning.R")
 
 # Run the functions defined in src/data_cleaning.R to produce the FIM data columns
 federal_purchases_test <- create_federal_purchases(
@@ -644,7 +644,7 @@ source("src/define_inputs.R")
 # Next, we source essential functions we need to calculate the FIM in this section.
 # All of these modules contain nothing but functions. No actual code is executed
 # when you source them. Instead, the code is executed in this script.
-source("src/contributions_beta.R")
+source("src/contributions.R")
 
 # Another type of variable we need is MPC matrices. If you read the documentation
 # in `src/mpc_lorae.R`, you'll develop a clearer understanding of how these 
@@ -1011,10 +1011,10 @@ save(hutchins_fim, file = 'shiny/cache/hutchins_fim.rda')
 
 # Write the contributions and inputs to an Excel file in results/{month_year}/beta
 # TODO: This code only works if the beta/ directory already exists. 
-openxlsx::write.xlsx(contributions_df, file = glue('results/{month_year}/beta/contributions-{month_year}-beta.xlsx'), overwrite = TRUE)
-openxlsx::write.xlsx(inputs_df, file = glue('results/{month_year}/beta/inputs-{month_year}-beta.xlsx'), overwrite = TRUE)
+openxlsx::write.xlsx(contributions_df, file = glue('results/{month_year}/beta/contributions-{month_year}.xlsx'), overwrite = TRUE)
+openxlsx::write.xlsx(inputs_df, file = glue('results/{month_year}/beta/inputs-{month_year}.xlsx'), overwrite = TRUE)
 
-write_rds(contributions_df, file = 'data/contributions-BETA.rds')
+write_rds(contributions_df, file = 'data/contributions.rds')
 usethis::use_data(contributions_df, overwrite = TRUE)
 
 # Section F: Web materials  -------------------------------------------------------------
