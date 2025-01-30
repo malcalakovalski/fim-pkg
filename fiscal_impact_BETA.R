@@ -60,14 +60,14 @@ dir_create(glue('results/{month_year}'))
 dir_create(glue('results/{month_year}/input_data')) 
 # Beta folder for Lorae's refactored results
 dir_create(glue('results/{month_year}/beta'))
-  
+
 # Copy the file 'forecast.xlsx' from the 'data' directory to the 'input_data' directory
 # This is the copy we keep for the current update
 file_copy(
   path = 'data/forecast.xlsx', 
   new_path = glue('results/{month_year}/input_data/forecast_{month_year}.xlsx'), 
   overwrite = TRUE
-  )
+)
 
 # ---- section-B-test-data-import ----
 # Source the module in the src directory containing the functions which import
@@ -91,7 +91,7 @@ federal_purchases_test <- create_federal_purchases(
   national_accounts, 
   forecast, 
   create_placeholder_nas()
-  )
+)
 
 consumption_grants_test <- create_consumption_grants(
   national_accounts,
@@ -243,7 +243,6 @@ state_health_outlays_test <- create_state_health_outlays(
 )
 
 
-
 # ---- section-B.0-read-raw-rds-data ----
 
 # Load in national accounts. This file is rewritten each time data-raw/haver-pull.R
@@ -288,6 +287,7 @@ deflator_overrides <- readxl::read_xlsx('data/forecast.xlsx',
 # Save current quarter for later
 current_quarter <- historical_overrides %>% slice_max(date) %>% pull(date) 
 
+# Quarterly Federal Purchases Deflator Growth 
 federal_purchases_deflator_growth_test <- create_federal_purchases_deflator_growth(
   national_accounts,
   projections,
@@ -295,6 +295,11 @@ federal_purchases_deflator_growth_test <- create_federal_purchases_deflator_grow
   create_placeholder_nas()
 )
 
+# Annualized Federal Purchases Deflator Growth 
+federal_purchases_deflator_growth_annualized_test <- create_annualized_growth(
+  x= federal_purchases_deflator_growth_test)
+
+# Quarterly Consumption Grants Deflator Growth 
 consumption_grants_deflator_growth_test <- create_consumption_grants_deflator_growth(
   national_accounts,
   projections,
@@ -302,7 +307,11 @@ consumption_grants_deflator_growth_test <- create_consumption_grants_deflator_gr
   create_placeholder_nas()
 )
 
+# Annualized Consumption Grants Deflator Growth 
+consumption_grants_deflator_growth_annualized_test <- create_annualized_growth(
+  x= consumption_grants_deflator_growth_test)
 
+# Quarterly Investment Grants Deflator Growth 
 investment_grants_deflator_growth_test <- create_investment_grants_deflator_growth(
   national_accounts,
   projections,
@@ -310,6 +319,11 @@ investment_grants_deflator_growth_test <- create_investment_grants_deflator_grow
   create_placeholder_nas()
 )
 
+# Annualized Investment Grants Deflator Growth
+investment_grants_deflator_growth_annualized_test <- create_annualized_growth(
+  x= investment_grants_deflator_growth_test)
+
+# Quarterly State Purchases Deflator Growth 
 state_purchases_deflator_growth_test <- create_state_purchases_deflator_growth(
   national_accounts,
   projections,
@@ -317,6 +331,11 @@ state_purchases_deflator_growth_test <- create_state_purchases_deflator_growth(
   create_placeholder_nas()
 )
 
+# Annualized State Purchases Deflator Growth 
+state_purchases_deflator_growth_annualized_test <- create_annualized_growth(
+  x= state_purchases_deflator_growth_test)
+
+# Quarterly Consumption Deflator Growth
 consumption_deflator_growth_test <- create_consumption_deflator_growth(
   national_accounts,
   projections,
@@ -324,13 +343,30 @@ consumption_deflator_growth_test <- create_consumption_deflator_growth(
   create_placeholder_nas()
 )
 
+# Annualized Consumption Deflator Growth 
+consumption_deflator_growth_annualized_test <- create_annualized_growth(
+  x= consumption_deflator_growth_test)
+
+# Quarterly Real Potential GDP Growth 
 real_potential_gdp_growth_test <- create_real_potential_gdp_growth(
   national_accounts,
   projections,
   create_placeholder_nas()
 )
 
+# Annualized Real Potential GDP Growth 
+real_potential_gdp_growth_annualized_test <- create_annualized_growth(
+  x= real_potential_gdp_growth_test)
+
+# GDP 
 gdp_test <- create_gdp(
+  national_accounts,
+  projections,
+  create_placeholder_nas()
+)
+
+# Consumption
+consumption_test <- create_consumption(
   national_accounts,
   projections,
   create_placeholder_nas()
@@ -351,7 +387,7 @@ projections <- projections %>%
     real_federal_purchases = gfh,
     state_purchases = gs,
     real_state_purchases = gsh
-    )
+  )
 
 projections <- projections %>%
   # Implicit price deflators
@@ -360,7 +396,7 @@ projections <- projections %>%
     federal_purchases_deflator =  federal_purchases/real_federal_purchases, 
     state_purchases_deflator = state_purchases/real_state_purchases,
     consumption_deflator = consumption/real_consumption
-    ) %>%
+  ) %>%
   # Growth rates
   mutate(
     across(
@@ -370,7 +406,7 @@ projections <- projections %>%
         "federal_purchases_deflator", 
         "state_purchases_deflator", 
         "consumption_deflator"),
-        #"jgse"),
+      #"jgse"),
       # Calculate quarterly growth rate using qgr() function, equal to x/lag(x), 
       # then subtract 1.
       .fns = ~ qgr(.) - 1,
@@ -439,7 +475,7 @@ national_accounts <- national_accounts %>%
     consumption_grants_deflator_growth = jgse_growth,
     investment_grants_deflator_growth = jgsi_growth
   )
-  
+
 # ---- section-B.5-join-national-accounts-to-projections ----
 usna1 <- coalesce_join(x = national_accounts,
                        y = projections,
@@ -537,7 +573,7 @@ usna3 <- usna2 %>%
                state_purchases_deflator_growth = deflator_overrides$state_purchases_deflator_growth_override,
                consumption_grants_deflator_growth = deflator_overrides$consumption_grants_deflator_growth_override,
                investment_grants_deflator_growth = deflator_overrides$investment_grants_deflator_growth_override
-               ) %>%
+  ) %>%
   # delete unneeded tax vars which were already rolled into federal non corporate taxes
   # and state non corporate taxes
   select(
@@ -631,9 +667,8 @@ projections <- projections %>%
     -ui # Used in calculation but no longer needed
   )
 
-
 ######################################################################################
-# This is the point where we go from generating a data frame to actually calculating the FIM
+# This is the point where we go from generating our data inputs to actually calculating the FIM
 ######################################################################################
 
 # This script defines the 33 input variables used in the FIM. It assumes that the 
@@ -654,278 +689,175 @@ source("src/contributions.R")
 # design pattern. This will save us a lot of computing time.
 # 
 
-### CALCULATE THE FIM variable-by-variable ########################################
+### APPLY MPCS FOR TAXES AND TRANSFERS ########################################
 
-# The following section calculates FIM contributions for each of the 24 FIM
-# output variables sequentially. 
+# APPLY MPCS TO TAXES
 
-# TOO: We should actually cache all of the FIM input variables - "accessory" and
-# "main" - as well as all of the FIM outputs. Ideally, the FIM is triggered by
-# an observer function, which sees a change in the state of an input variable or
-# an MPC assumption, which then triggers a cascade of functions that re-calculate
-# the FIM. The output is then shown on the Shiny app.
+# Federal Non-Corporate Taxes
+post_mpc_federal_non_corporate_taxes <- mpc(x = federal_non_corporate_taxes_test$data_series, 
+                                            mpc = readRDS("cache/mpc_matrices/federal_non_corporate_taxes.rds"))
 
-# Example FIM outputs, or "contributions", as we call them, since summing the
-# 24 "contributions" leads to the top line FIM.
-# For now, I copy the results to the clipboard so that I can view
-# and compare the results to prior FIM results in Excel. These four examples
-# use functions from the calculate_contributions.R script.
-# Federal purchases contribution
-federal_purchases_contribution <- contribution(
+# State Non-Corporate Taxes
+post_mpc_state_non_corporate_taxes <- mpc(x = state_non_corporate_taxes_test$data_series, 
+                                          mpc = readRDS("cache/mpc_matrices/state_non_corporate_taxes.rds"))
+
+# Federal Corporate Taxes
+post_mpc_federal_corporate_taxes <- mpc(x = federal_corporate_taxes_test$data_series, 
+                                        mpc = readRDS("cache/mpc_matrices/federal_corporate_taxes.rds"))
+
+# State Corporate Taxes
+post_mpc_state_corporate_taxes <- mpc(x = state_corporate_taxes_test$data_series, 
+                                      mpc = readRDS("cache/mpc_matrices/state_corporate_taxes.rds"))
+
+# Supply Side IRA (no MPC)
+supply_side_ira <- as.matrix(supply_side_ira_test$data_series)
+
+
+# APPLY MPCS TO TRANSFERS #
+# Federal Social Benefits 
+post_mpc_federal_social_benefits <- mpc(x = federal_social_benefits_test$data_series, 
+                                        mpc = readRDS("cache/mpc_matrices/federal_social_benefits.rds"))
+
+# State Social Benefits
+post_mpc_state_social_benefits <- mpc(x = state_social_benefits_test$data_series, 
+                                      mpc = readRDS("cache/mpc_matrices/state_social_benefits.rds"))
+
+# Rebate Checks 
+post_mpc_rebate_checks <- mpc(x = rebate_checks_test$data_series, 
+                              mpc = readRDS("cache/mpc_matrices/rebate_checks.rds"))
+
+# Rebate Checks ARP 
+post_mpc_rebate_checks_arp <- mpc(x = rebate_checks_arp_test$data_series, 
+                                  mpc = readRDS("cache/mpc_matrices/rebate_checks_arp.rds"))
+
+# Federal UI 
+post_mpc_federal_ui <- mpc(x = federal_ui_test$data_series, 
+                           mpc = readRDS("cache/mpc_matrices/federal_ui.rds"))
+
+# State UI 
+post_mpc_state_ui <- mpc(x = state_ui_test$data_series, 
+                         mpc = readRDS("cache/mpc_matrices/state_ui.rds"))
+
+# Federal Subsidies
+post_mpc_federal_subsidies <- mpc(x = federal_subsidies_test$data_series, 
+                                  mpc = readRDS("cache/mpc_matrices/federal_subsidies.rds"))
+
+# Federal Aid to Small Businesses ARP 
+post_mpc_federal_aid_to_small_businesses_arp <- mpc(x = federal_aid_to_small_businesses_arp_test$data_series, 
+                                                    mpc = readRDS("cache/mpc_matrices/federal_aid_to_small_businesses_arp.rds"))
+
+# Federal Other Direct Aid ARP 
+post_mpc_federal_other_direct_aid_arp <- mpc(x = federal_other_direct_aid_arp_test$data_series, 
+                                             mpc = readRDS("cache/mpc_matrices/federal_other_direct_aid_arp.rds"))
+
+# Federal Other Vulnerable ARP 
+post_mpc_federal_other_vulnerable_arp <- mpc(x = federal_other_vulnerable_arp_test$data_series, 
+                                             mpc = readRDS("cache/mpc_matrices/federal_other_vulnerable_arp.rds"))
+
+# Federal Student Loans 
+post_mpc_federal_student_loans <- mpc(x = federal_student_loans_test$data_series,
+                                      mpc = readRDS("cache/mpc_matrices/federal_student_loans.rds"))
+
+# State Subsidies 
+post_mpc_state_subsidies <- mpc(x = state_subsidies_test$data_series, 
+                                mpc = readRDS("cache/mpc_matrices/state_subsidies.rds"))
+
+# Federal Health Outlays 
+post_mpc_federal_health_outlays <- mpc(x = federal_health_outlays_test$data_series,
+                                       mpc = readRDS("cache/mpc_matrices/federal_health_outlays.rds"))
+
+# State Health Outlays 
+post_mpc_state_health_outlays <- mpc(x = state_health_outlays_test$data_series, 
+                                     mpc = readRDS("cache/mpc_matrices/state_health_outlays.rds"))
+
+### CREATE FEDERAL PURCHASES #####
+federal_test <- data.frame(date = gdp_test$date, 
+                           data_series = federal_purchases_test$data_series + 
+                             consumption_grants_test$data_series + 
+                             investment_grants_test$data_series)
+
+### CREATE STATE PURCHASES #####
+state_test <- data.frame(date = gdp_test$date, 
+                         data_series = state_purchases_test$data_series -
+                           consumption_grants_test$data_series -
+                           investment_grants_test$data_series
+                           )
+
+
+#### CREATE TAXES #####
+taxes_test <- data.frame(date = date, data_series = post_mpc_federal_non_corporate_taxes + 
+                           post_mpc_state_non_corporate_taxes + post_mpc_federal_corporate_taxes + 
+                           post_mpc_state_corporate_taxes + supply_side_ira) 
+
+#### CREATE TRANSFERS #####
+
+transfers_test <- data.frame(date = date, data_series = post_mpc_federal_social_benefits + post_mpc_state_social_benefits +
+                               post_mpc_rebate_checks + post_mpc_rebate_checks_arp + 
+                               post_mpc_federal_ui + post_mpc_state_ui + 
+                               post_mpc_federal_subsidies + post_mpc_federal_aid_to_small_businesses_arp + 
+                               post_mpc_federal_other_direct_aid_arp + post_mpc_federal_other_vulnerable_arp  + 
+                               post_mpc_federal_student_loans + post_mpc_state_subsidies +
+                               post_mpc_federal_health_outlays + post_mpc_state_health_outlays)
+
+#### SUM TAXES AND TRANSFERS ####
+
+taxes_transfers_test <- data.frame(date = date, 
+                                   data_series = taxes_test$data_series + transfers_test$data_series)
+
+
+
+#######################################################
+#               CALCULATE THE FIM                     #
+#######################################################
+
+# Federal Purchases Contribution (NIPA Consistent)
+federal_purchases_contribution <- contribution_purchases(
   x = federal_purchases_test$data_series, # Using the new test version
-  mpc_matrix = NULL,
   dg = federal_purchases_deflator_growth_test$data_series, # Using the new test version
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
+  rpgg = real_potential_gdp_growth_annualized_test$data_series, # Using the new test version
   gdp = gdp_test$data_series # Using the new test version
 )
 
-# Consumption grants contribution
-consumption_grants_contribution <- contribution(
-  x = consumption_grants_test$data_series, # Using the new test version
-  mpc_matrix = NULL,
-  dg = consumption_grants_deflator_growth_test$data_series, # Using the new test version
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# Investment grants contribution
-investment_grants_contribution <- contribution(
-  x = investment_grants_test$data_series, # Using the new test version
-  mpc_matrix = NULL,
-  dg = investment_grants_deflator_growth_test$data_series, # Using the new test version
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# State purchases contribution
-state_purchases_contribution <- contribution(
+# State Purchases Contribution (NIPA Consistent)
+state_purchases_contribution <- contribution_purchases(
   x = state_purchases_test$data_series, # Using the new test version
-  mpc_matrix = NULL,
   dg = state_purchases_deflator_growth_test$data_series, # Using the new test version
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
+  rpgg = real_potential_gdp_growth_annualized_test$data_series, # Using the new test version
   gdp = gdp_test$data_series # Using the new test version
-)
+) 
+  
 
-# Federal non corporate taxes
-federal_non_corporate_taxes_contribution <- contribution(
-  x = federal_non_corporate_taxes_test$data_series, # Using the new test version
-  mpc_matrix = readRDS("cache/mpc_matrices/federal_non_corporate_taxes.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
+#### FIM FOR TAXES AND TRANSFERS #####
+# Generate Counterfactual Taxes and Transfers
+counterfactual_consumption <- t_counterfactual(
+  x = taxes_transfers_test$data_series, 
+  dg = consumption_deflator_growth_test$data_series, 
+  rpgg = real_potential_gdp_growth_test$data_series, 
+  c = consumption_test$data_series
 )
+ 
+minus_neutral <- (consumption_test$data_series/lag(consumption_test$data_series))^4 - 
+  (counterfactual_consumption/lag(consumption_test$data_series))^4
 
-# State non corporate taxes
-state_non_corporate_taxes_contribution <- contribution(
-  x = state_non_corporate_taxes_test$data_series, # Using the new test version 
-  mpc_matrix = readRDS("cache/mpc_matrices/state_non_corporate_taxes.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
+scale_to_gdp <- minus_neutral*(lag(consumption_test$data_series)/lag(gdp_test$data_series))
 
-# Federal corporate taxes
-# IMPORTANT NOTE: This DOES produce the correct federal corporate taxes contribution,
-# however, it diverges from 2022 Q3 to 2026 Q2 because federal corporate taxes are
-# later added to supply side IRA in the FIM script and redefined as 
-# "federal_corporate_taxes_contribution".
-federal_corporate_taxes_contribution <- contribution(
-  x = federal_corporate_taxes_test$data_series, # Using the new test version
-  mpc_matrix = readRDS("cache/mpc_matrices/federal_corporate_taxes.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# Supply side IRA contribution
-supply_side_ira_contribution <- contribution(
-  x = supply_side_ira_test$data_series, # Using the new test version
-  mpc_matrix = NULL,
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# State corporate taxes
-state_corporate_taxes_contribution <- contribution(
-  x = state_corporate_taxes_test$data_series, # Using the new test version 
-  mpc_matrix = readRDS("cache/mpc_matrices/state_corporate_taxes.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# Federal social benefits
-federal_social_benefits_contribution <- contribution(
-  x = federal_social_benefits_test$data_series, # Using the new test version 
-  mpc_matrix = readRDS("cache/mpc_matrices/federal_social_benefits.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# State social benefits
-state_social_benefits_contribution <- contribution(
-  x = state_social_benefits_test$data_series, # Using the new test version 
-  mpc_matrix = readRDS("cache/mpc_matrices/state_social_benefits.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# Rebate checks
-rebate_checks_contribution <- contribution(
-  x = rebate_checks_test$data_series, # Using the new test version 
-  mpc_matrix = readRDS("cache/mpc_matrices/rebate_checks.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# Rebate checks ARP
-rebate_checks_arp_contribution <- contribution(
-  x = rebate_checks_arp_test$data_series, # Using the new test version 
-  mpc_matrix = readRDS("cache/mpc_matrices/rebate_checks_arp.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# Federal UI
-federal_ui_contribution <- contribution(
-  x = federal_ui_test$data_series, # Using the new test version 
-  mpc_matrix = readRDS("cache/mpc_matrices/federal_ui.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# State UI
-state_ui_contribution <- contribution(
-  x = state_ui_test$data_series, # Using the new test version 
-  mpc_matrix = readRDS("cache/mpc_matrices/state_ui.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# Federal subsidies
-federal_subsidies_contribution <- contribution(
-  x = federal_subsidies_test$data_series, # Using the new test version 
-  mpc_matrix = readRDS("cache/mpc_matrices/federal_subsidies.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# Federal aid to small businesses
-federal_aid_to_small_businesses_arp_contribution <- contribution(
-  x = federal_aid_to_small_businesses_arp_test$data_series, # Using the new test version 
-  mpc_matrix = readRDS("cache/mpc_matrices/federal_aid_to_small_businesses_arp.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# Federal other direct aid arp
-federal_other_direct_aid_arp_contribution <- contribution(
-  x = federal_other_direct_aid_arp_test$data_series, # Using the new test version 
-  mpc_matrix = readRDS("cache/mpc_matrices/federal_other_direct_aid_arp.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# Federal other vulnerable arp
-federal_other_vulnerable_arp_contribution <- contribution(
-  x = federal_other_vulnerable_arp_test$data_series, # Using the new test version
-  mpc_matrix = readRDS("cache/mpc_matrices/federal_other_vulnerable_arp.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# Federal student loans
-federal_student_loans_contribution <- contribution(
-  x = federal_student_loans_test$data_series, # Using the new test version
-  mpc_matrix = readRDS("cache/mpc_matrices/federal_student_loans.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version 
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# State subsidies contribution
-state_subsidies_contribution <- contribution(
-  x = state_subsidies_test$data_series, # Using the new test version
-  mpc_matrix = readRDS("cache/mpc_matrices/state_subsidies.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# Federal health outlays contribution
-federal_health_outlays_contribution <- contribution(
-  x = federal_health_outlays_test$data_series, # Using the new test version
-  mpc_matrix = readRDS("cache/mpc_matrices/federal_health_outlays.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
-# State health outlays contribution
-state_health_outlays_contribution <- contribution(
-  x = state_health_outlays_test$data_series, # Using the new test version
-  mpc_matrix = readRDS("cache/mpc_matrices/state_health_outlays.rds"), 
-  rpgg = real_potential_gdp_growth_test$data_series, # Using the new test version
-  dg = consumption_deflator_growth_test$data_series, # Using the new test version
-  gdp = gdp_test$data_series # Using the new test version
-)
-
+consumption_contribution <- scale_to_gdp*100
 
 ### AGGREGATE contributions ########################################
-federal_contribution <- 
-  (federal_purchases_contribution + 
-  consumption_grants_contribution + 
-  investment_grants_contribution) 
+federal_contribution <- federal_purchases_contribution
 
-state_contribution <- 
-  (state_purchases_contribution - 
-  consumption_grants_contribution - 
-  investment_grants_contribution)
-
-taxes_contribution <-
-  (federal_non_corporate_taxes_contribution + 
-  state_non_corporate_taxes_contribution + 
-  federal_corporate_taxes_contribution + 
-  supply_side_ira_contribution + 
-  state_corporate_taxes_contribution) 
-
-transfers_contribution <-
-  (federal_social_benefits_contribution + 
-  state_social_benefits_contribution + 
-  rebate_checks_contribution + 
-  rebate_checks_arp_contribution + 
-  federal_ui_contribution + 
-  state_ui_contribution + 
-  federal_subsidies_contribution + 
-  federal_aid_to_small_businesses_arp_contribution + 
-  federal_other_direct_aid_arp_contribution + 
-  federal_other_vulnerable_arp_contribution + 
-  federal_student_loans_contribution + 
-  state_subsidies_contribution + 
-  federal_health_outlays_contribution + 
-  state_health_outlays_contribution) 
-
-consumption_contribution <-
-  (taxes_contribution +
-  transfers_contribution)
+state_contribution <- state_purchases_contribution
 
 fiscal_impact_measure <-
   (federal_contribution +
   state_contribution +
-  taxes_contribution +
-  transfers_contribution)
+  consumption_contribution) 
 
+# Replace NAs with Zeros
+fiscal_impact_measure <- replace(fiscal_impact_measure, 
+                                 is.na(fiscal_impact_measure), 0)
+  
+# Calculate Four Quarter Moving Average
 fiscal_impact_4q_ma <- fiscal_impact_measure %>%
   SMA(zoo::na.locf(., na.rm = F), n=4)
 
@@ -972,42 +904,14 @@ contributions_df <- data.frame(
   date,
   id,
   recession,
-  federal_purchases_contribution,
-  consumption_grants_contribution,
-  investment_grants_contribution,
-  state_purchases_contribution,
-  federal_non_corporate_taxes_contribution,
-  state_non_corporate_taxes_contribution,
-  federal_corporate_taxes_contribution,
-  supply_side_ira_contribution,
-  state_corporate_taxes_contribution,
-  federal_social_benefits_contribution,
-  state_social_benefits_contribution,
-  rebate_checks_contribution,
-  rebate_checks_arp_contribution,
-  federal_ui_contribution,
-  state_ui_contribution,
-  federal_subsidies_contribution,
-  federal_aid_to_small_businesses_arp_contribution,
-  federal_other_direct_aid_arp_contribution,
-  federal_other_vulnerable_arp_contribution,
-  federal_student_loans_contribution,
-  state_subsidies_contribution,
-  federal_health_outlays_contribution,
-  state_health_outlays_contribution,
   federal_contribution,
   state_contribution,
-  taxes_contribution,
-  transfers_contribution,
   consumption_contribution,
   fiscal_impact_measure,
   fiscal_impact_4q_ma
 ) %>%
   as_tsibble(index = date)
 
-# Save the FIM to the Shiny Chache 
-hutchins_fim <- data.frame(date, fiscal_impact_measure, fiscal_impact_4q_ma)
-save(hutchins_fim, file = 'shiny/cache/hutchins_fim.rda')
 
 # Write the contributions and inputs to an Excel file in results/{month_year}/beta
 # TODO: This code only works if the beta/ directory already exists. 

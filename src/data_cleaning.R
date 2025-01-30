@@ -53,8 +53,6 @@ create_federal_purchases <- function(
   return(result)
 }
 
-
-
 #' Create Consumption Grants Data Series
 #'
 #' This function combines consumption grants data from national accounts, forecast sources, 
@@ -1242,8 +1240,62 @@ create_gdp <- function(
   
   return(result)
 }
-# gdp <- projections$gdp
-# # Extras
-# date <- projections$date
-# id <- projections$id
-# recession <- projections$recession
+
+
+# Create Consumption
+create_consumption <- function(
+    national_accounts, 
+    projections, 
+    placeholder_nas
+) {
+  # Redefine consumption and values in the future using CBO growth rates
+  # Select column of interest from the projections tibble
+  projections1 <- projections %>% 
+    mutate(consumption_growth = q_g(c)) %>%
+    # We only need the consumption growth rate from our projections
+    select(date, consumption_growth) %>%
+    # We need only the growth rates that represent future quarters
+    filter(date > current_quarter)
+  
+  # Select columns of interest from the national accounts tibble
+  national_accounts1 <- national_accounts %>% 
+    # Haver code for personal consumption expenditures is 'c'
+    select(date, c) %>%
+    rename(consumption = c)
+  
+  # Define an index number for the current data point and end data point
+  current_index <- which(national_accounts1$date == current_quarter)
+  seed_consumption = national_accounts1$consumption[current_index]
+  
+  # Define new consumption projections by growing current consumption  (seed) at CBO growth rates
+  # using the cumulative_series() function
+  new_consumption_projections <- cumulative_series(
+    seed = seed_consumption,
+    growth_rates = 1 + projections1$consumption_growth
+  )
+  
+  # Define projections row as this adjusted forecast
+  projections2 <- projections1 %>%
+    mutate(consumption = new_consumption_projections) %>%
+    select(date, consumption)
+  
+  # Merge the national accounts with the projection using the commonly named `gdp`
+  # and `date` columns. 
+  result <- coalesce_join(national_accounts1, projections2, by = 'date') %>%
+    # Rename the gdp column to generic data_series
+    rename(data_series = consumption) %>%
+    # Merge with a data frame of NAs extending to 2034 Q3
+    coalesce_join(., placeholder_nas, by = "date") %>%
+    # Repopulate the NAs to be 0s
+    mutate(across(everything(), ~ replace_na(., 0))) %>%
+    # Reorder the entries chronologically
+    arrange(date)
+  
+  return(result)
+}
+
+# Create Annualized Growth 
+create_annualized_growth <- function(x) {
+  x %>%
+    mutate(data_series = (1 + data_series)^4 - 1)
+}
