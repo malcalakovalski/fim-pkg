@@ -804,6 +804,12 @@ transfers_test <- data.frame(date = date, data_series = post_mpc_federal_social_
 taxes_transfers_test <- data.frame(date = date, 
                                    data_series = taxes_test$data_series + transfers_test$data_series)
 
+### CREATE FIM STATE PURCHASES 
+fim_state_purchases_test = data.frame(date = date, 
+                                 data_series = state_purchases_test$data_series -
+                                   consumption_grants_test$data_series -
+                                   investment_grants_test$data_series)
+
 
 
 #######################################################
@@ -811,7 +817,7 @@ taxes_transfers_test <- data.frame(date = date,
 #######################################################
 
 # Federal Purchases Contribution (NIPA Consistent)
-federal_purchases_contribution <- contribution_purchases(
+nipa_federal_purchases_contribution <- contribution_purchases(
   x = federal_purchases_test$data_series, # Using the new test version
   dg = federal_purchases_deflator_growth_test$data_series, # Using the new test version
   rpgg = real_potential_gdp_growth_annualized_test$data_series, # Using the new test version
@@ -819,13 +825,28 @@ federal_purchases_contribution <- contribution_purchases(
 )
 
 # State Purchases Contribution (NIPA Consistent)
-state_purchases_contribution <- contribution_purchases(
+nipa_state_purchases_contribution <- contribution_purchases(
   x = state_purchases_test$data_series, # Using the new test version
   dg = state_purchases_deflator_growth_test$data_series, # Using the new test version
   rpgg = real_potential_gdp_growth_annualized_test$data_series, # Using the new test version
   gdp = gdp_test$data_series # Using the new test version
 ) 
-  
+
+# Total NIPA Purchases Contribution (NIPA Consistent)
+nipa_total_purchases_contribution <- nipa_state_purchases_contribution + 
+  nipa_federal_purchases_contribution
+
+# State Purchases Contribution (FIM Consistent)
+fim_state_purchases_contribution <- contribution_purchases(
+  x = fim_state_purchases_test$data_series, # Using the new test version
+  dg = state_purchases_deflator_growth_test$data_series, # Using the new test version
+  rpgg = real_potential_gdp_growth_annualized_test$data_series, # Using the new test version
+  gdp = gdp_test$data_series # Using the new test version
+) 
+
+# Federal Purchases Contribution (FIM Consistent)
+fim_federal_purchases_contribution <- nipa_total_purchases_contribution - 
+  fim_state_purchases_contribution 
 
 #### FIM FOR TAXES AND TRANSFERS #####
 # Generate Counterfactual Taxes and Transfers
@@ -844,9 +865,9 @@ scale_to_gdp <- minus_neutral*(lag(consumption_test$data_series)/lag(gdp_test$da
 consumption_contribution <- scale_to_gdp*100
 
 ### AGGREGATE contributions ########################################
-federal_contribution <- federal_purchases_contribution
+federal_contribution <- fim_federal_purchases_contribution
 
-state_contribution <- state_purchases_contribution
+state_contribution <- fim_state_purchases_contribution
 
 fiscal_impact_measure <-
   (federal_contribution +
@@ -873,6 +894,7 @@ inputs_df <- data.frame(
   consumption_deflator_growth,
   real_potential_gdp_growth,
   gdp,
+  consumption = consumption_test$data_series,
   federal_purchases,
   consumption_grants,
   investment_grants,
@@ -895,7 +917,24 @@ inputs_df <- data.frame(
   federal_student_loans,
   state_subsidies,
   federal_health_outlays,
-  state_health_outlays
+  state_health_outlays,
+  post_mpc_federal_non_corporate_taxes,
+  post_mpc_state_non_corporate_taxes,
+  post_mpc_federal_corporate_taxes,
+  post_mpc_state_corporate_taxes,
+  post_mpc_federal_social_benefits,
+  post_mpc_state_social_benefits, 
+  post_mpc_rebate_checks,
+  post_mpc_rebate_checks_arp, 
+  post_mpc_federal_ui,
+  post_mpc_state_ui,
+  post_mpc_federal_subsidies,
+  post_mpc_federal_aid_to_small_businesses_arp,
+  post_mpc_federal_other_vulnerable_arp,
+  post_mpc_federal_student_loans, 
+  post_mpc_state_subsidies, 
+  post_mpc_federal_health_outlays, 
+  post_mpc_state_health_outlays
 ) %>%
   as_tsibble(index = date)
 
@@ -904,6 +943,10 @@ contributions_df <- data.frame(
   date,
   id,
   recession,
+  nipa_federal_purchases_contribution,
+  nipa_state_purchases_contribution, 
+  fim_federal_purchases_contribution, 
+  fim_state_purchases_contribution, 
   federal_contribution,
   state_contribution,
   consumption_contribution,
