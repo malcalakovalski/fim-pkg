@@ -781,7 +781,7 @@ state_test <- data.frame(date = gdp_test$date,
                          data_series = state_purchases_test$data_series -
                            consumption_grants_test$data_series -
                            investment_grants_test$data_series
-                           )
+)
 
 
 #### CREATE TAXES #####
@@ -806,9 +806,9 @@ taxes_transfers_test <- data.frame(date = date,
 
 ### CREATE FIM STATE PURCHASES 
 fim_state_purchases_test = data.frame(date = date, 
-                                 data_series = state_purchases_test$data_series -
-                                   consumption_grants_test$data_series -
-                                   investment_grants_test$data_series)
+                                      data_series = state_purchases_test$data_series -
+                                        consumption_grants_test$data_series -
+                                        investment_grants_test$data_series)
 
 
 
@@ -856,7 +856,7 @@ counterfactual_consumption <- t_counterfactual(
   rpgg = real_potential_gdp_growth_test$data_series, 
   c = consumption_test$data_series
 )
- 
+
 minus_neutral <- (consumption_test$data_series/lag(consumption_test$data_series))^4 - 
   (counterfactual_consumption/lag(consumption_test$data_series))^4
 
@@ -871,13 +871,13 @@ state_contribution <- fim_state_purchases_contribution
 
 fiscal_impact_measure <-
   (federal_contribution +
-  state_contribution +
-  consumption_contribution) 
+     state_contribution +
+     consumption_contribution) 
 
 # Replace NAs with Zeros
 fiscal_impact_measure <- replace(fiscal_impact_measure, 
                                  is.na(fiscal_impact_measure), 0)
-  
+
 # Calculate Four Quarter Moving Average
 fiscal_impact_4q_ma <- fiscal_impact_measure %>%
   SMA(zoo::na.locf(., na.rm = F), n=4)
@@ -980,12 +980,12 @@ interactive <- contributions_df %>%
          state_local = state_contribution,
          consumption = consumption_contribution,
          projection = id
-         ) %>% 
+  ) %>% 
   # Recode `recession` and `projection` variables to 0 and 1 binaries
   mutate(recession = recode(recession, `-1` = 0),
          recession = replace_na(recession, 0),
          projection = recode(projection, historical = 0, projection = 1)
-         ) %>%
+  ) %>%
   # Split date column into year and quarter columns
   separate(date, c('year', 'quarter'))
 
@@ -1004,7 +1004,7 @@ file_copy(path = 'Fiscal-Impact.html',
           new_path = glue('results/{month_year}/beta/Fiscal-Impact-{month_year}.html'),
           overwrite = TRUE)
 
-
+stop()
 
 # Get update comparison html file 
 source("scripts/index_temp.R")
@@ -1012,4 +1012,3 @@ source("scripts/index_temp.R")
 rmarkdown::render(input = 'update-comparison-markdown.Rmd',
                   output_file = glue('results/{month_year}/beta/update-comparison-{month_year}'),
                   clean = TRUE)
-

@@ -29,7 +29,7 @@ devtools::load_all()
 
 ```{r data, echo = FALSE, message = FALSE, warning = FALSE, results = 'asis'}
 fim <- 
- readr::read_rds('data/contributions-BETA.RDS') %>% 
+ readr::read_rds('data/contributions.RDS') %>% 
  filter(date >= params$start & date <= params$end)
 ```
 
@@ -157,8 +157,7 @@ expanded <-
     date,
     federal_contribution,
     state_contribution,
-    taxes_transfers_contribution = transfers_contribution + federal_corporate_taxes_contribution +
-      federal_non_corporate_taxes_contribution + state_corporate_taxes_contribution + state_non_corporate_taxes_contribution,
+    consumption_contribution,
     fiscal_impact_4q_ma
   ) %>%
   pivot_longer(cols = ends_with('contribution'),
