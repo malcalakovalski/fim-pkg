@@ -1,7 +1,7 @@
 # levels.R
 #
 # 
-# Last Updated: 1/7/2024
+# Last Updated: 11/15/2024
 
 # Load packages - purr is not used in fiscal_impact_BETA.R
 packages <- c(
@@ -37,15 +37,12 @@ base_position <- which(usna$date == base_quarter)
 # Generate "cumprod_growth" function. This function takes a deflator data series 
 # as its input. It calculates the cumulative product of (1+rpgg+dg) beginning in 
 # the start_quarter using rpgg from real_potential_gdp_growth_test. 
-
 cumprod_growth <- 
   function(deflator){
     data.frame(real_potential_gdp_growth_test, deflator) %>% 
-      rename(deflator = data_series.1,
-             rpgg = data_series) %>%
       mutate(
-        prod = ifelse(date >= start_quarter, (1 + deflator) * (1 + rpgg) - 1, 0), # product the growth rates beginning in start_quarter, otherwise 0 
-        cumprod = ifelse(date >= start_quarter, cumprod(1 + prod) - 1, NA) # get the cumulative product of the product of the growth rates starting in start_quarter 
+        sum = ifelse(date >= start_quarter, data_series.1 + data_series, 0), # sum the growth rates beginning in start_quarter, otherwise 0 
+        cumprod = ifelse(date >= start_quarter, cumprod(1 + sum) - 1, NA) # get the cumulative product of the summed growth rates starting in start_quarter 
       ) %>%
       select(
         cumprod # keep only the cumulative product 
@@ -89,17 +86,18 @@ create_real_gdp <- function(
 ) {
   projections1 <- projections %>% 
     mutate(real_gdp_growth = q_g(gdph)) %>% # gdph is the haver code for real gdp 
-    select(date, gdp_growth) %>%
+    select(date, real_gdp_growth) %>%
     # Filter to select only the growth rates from future quarters
     filter(date > current_quarter)
   
   # Select columns of interest from the national accounts tibble
   national_accounts1 <- national_accounts %>% 
     # Haver code for real GDP is 'gdph'
-    select(date, gdph)
+    select(date, gdph) %>% 
+    rename(real_gdp = gdph)
   # Define an index number for the current data point and end data point
   current_index <- which(national_accounts1$date == current_quarter)
-  seed_real_gdph = national_accounts1$gdph[current_index]
+  seed_real_gdph = national_accounts1$real_gdp[current_index]
   
   # Define new real GDP projections by growing current real GDP (seed) at CBO growth rates
   # using the cumulative_series() function
@@ -129,7 +127,7 @@ create_real_gdp <- function(
 }
 
 # Define real_gdp series 
-real_gdp <- create_gdp(
+real_gdp <- create_real_gdp(
   national_accounts,
   projections,
   create_placeholder_nas()
@@ -145,7 +143,7 @@ counterfactual_levels <- function(x, #the data in question
                                   cumprod #cumulative product of deflator and real potential gdp growth 
                                   #calculated from cumprod function defined in previous function 
 ) {
-  output <- x- x[base_position] * (cumprod)
+  output <- x- x[base_position] * (cumprod+1)
   return(output)
 }
 
@@ -409,24 +407,21 @@ data <- data.frame(
   state_levels,
   taxes_levels,
   transfers_levels,
-  federal_social_benefits_contribution_levels,  
-  state_social_benefits_contribution_levels, 
-  rebate_checks_contribution_levels,
-  rebate_checks_arp_contribution_levels, 
-  federal_ui_contribution_levels,  
-  state_ui_contribution_levels, 
-  federal_subsidies_contribution_levels, 
-  federal_aid_to_small_businesses_arp_contribution_levels,  
-  federal_other_direct_aid_arp_contribution_levels,
-  federal_other_vulnerable_arp_contribution_levels,
-  federal_student_loans_contribution_levels,
-  state_subsidies_contribution_levels,
   federal_health_outlays_contribution_levels,
-  state_health_outlays_contribution_levels
-  
+  state_health_outlays_contribution_levels,
+  federal_subsidies_contribution_levels,
+  state_subsidies_contribution_levels,
+  federal_ui_contribution_levels,
+  state_ui_contribution_levels,
+  rebate_checks_arp_contribution_levels,
+  rebate_checks_contribution_levels,
+  state_purchases_contribution_levels, 
+  federal_purchases_contribution_levels
 ) %>% 
   filter(
     date >= start_quarter - 2 & date <= current_quarter + 8 
   )
+
+
 
 openxlsx::write.xlsx(data, file = glue('fim_levels.xlsx', overwrite = TRUE))

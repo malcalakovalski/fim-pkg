@@ -929,6 +929,29 @@ create_state_health_outlays <- function(
 # accessory variables use projections to construct them.
 # Explain this in the bookdown file
 
+# Date
+create_date <- function(
+    national_accounts, 
+    forecast, 
+    placeholder_nas
+) {
+  # Select column of interest from the forecast tibble
+  projections <- projections %>% 
+    select(date) %>% 
+    filter(date > current_quarter)
+  
+  # Select column of interest from the national accounts tibble
+  national_accounts <- national_accounts %>% 
+    select(date) 
+  
+  # Merge the national accounts with the forecast using the commonly named `data_series`
+  # and `date` columns. The historic (national accounts) data take precedence in
+  # the case of any conflicting observations.
+  result <- bind_rows(national_accounts, projections)
+  
+  return(result)
+}
+
 # Deflators
 
 create_federal_purchases_deflator_growth <- function(
@@ -1293,6 +1316,9 @@ create_consumption <- function(
   
   return(result)
 }
+
+
+
 
 # Create Annualized Growth 
 create_annualized_growth <- function(x) {

@@ -1,14 +1,9 @@
 # fiscal_impact_BETA.R
 #
 # This script runs the main FIM. It's the working replacement for fiscal_impact.R
-# that will eventually substitute for the original. It includes chunk names  that
-# are used in the technical walkthrough in docs/technical_documentation. Thus,
-# it's essential to be careful when editing chunk names to avoid causing an error
-# in docs/technical_documentation/index.Rmd
+# that will eventually substitute for the original. 
 
-# This, for example, is a chunk name:
 # ---- section-A.1-prep-for-update ----
-
 Sys.setenv(TZ = 'UTC') # Set the default time zone to UTC (Coordinated Universal Time)
 
 # Load packages
@@ -19,7 +14,7 @@ packages <- c(
 )
 librarian::shelf(packages)
 
-# Load all functions in package (?!?)
+# Load all functions in package
 devtools::load_all() 
 
 options(digits = 4) # Limit number of digits
@@ -43,8 +38,6 @@ last_month_2digit <- sprintf("%02d", month(last_month_date))
 last_year <- year(last_month_date)
 # Create last_month_year string for file naming
 last_month_year <- glue('{last_month_2digit}-{last_year}')
-
-print(last_month_year)
 
 # ---- section-A.2-create-empty-directories ----
 
@@ -247,13 +240,13 @@ state_health_outlays_test <- create_state_health_outlays(
 
 # Load in national accounts. This file is rewritten each time data-raw/haver-pull.R
 # is run.
-fim::national_accounts # this is the literal df
+#fim::national_accounts # this is the literal df
 load("data/national_accounts.rda") # this loads in a df named national_accounts
 
 # Load in projections. This file is rewritten each time data-raw/haver-pull.R
 # is run.
-fim::projections # this is the literal df
-load("data/projections.rda") # this loads in a df named projections
+#fim::projections # this is the literal df
+#load("data/projections.rda") # this loads in a df named projections
 
 
 # ---- section-B.1-read-overrides ----
@@ -262,14 +255,14 @@ load("data/projections.rda") # this loads in a df named projections
 # Since BEA put all CARES act grants to S&L in Q2 2020 we need to
 # override the historical data and spread it out based on our best guess
 # for when the money was spent.
-historical_overrides <- readxl::read_xlsx('data/forecast.xlsx',
-                                          sheet = 'historical overrides') %>% # Read in historical_overrides
-  select(-name) %>% # Remove longer name since we don't need it
-  pivot_longer(-variable,
-               names_to = 'date') %>% # Reshape so that variables are columns and dates are rows
-  pivot_wider(names_from = 'variable',
-              values_from = 'value') %>% 
-  mutate(date = yearquarter(date))
+#historical_overrides <- readxl::read_xlsx('data/forecast.xlsx',
+                                          #sheet = 'historical overrides') %>% # Read in historical_overrides
+  #select(-name) %>% # Remove longer name since we don't need it
+  #pivot_longer(-variable,
+               #names_to = 'date') %>% # Reshape so that variables are columns and dates are rows
+  #pivot_wider(names_from = 'variable',
+              #values_from = 'value') %>% 
+  #mutate(date = yearquarter(date))
 
 # Read in deflator overrides from data/forecast.xlsx
 deflator_overrides <- readxl::read_xlsx('data/forecast.xlsx',
@@ -285,7 +278,6 @@ deflator_overrides <- readxl::read_xlsx('data/forecast.xlsx',
 # TODO: This current quarter should be calculated at the top, for the entirety
 # of the FIM, not buried down here.
 # Save current quarter for later
-current_quarter <- historical_overrides %>% slice_max(date) %>% pull(date) 
 
 # Quarterly Federal Purchases Deflator Growth 
 federal_purchases_deflator_growth_test <- create_federal_purchases_deflator_growth(
@@ -371,6 +363,13 @@ consumption_test <- create_consumption(
   projections,
   create_placeholder_nas()
 )
+
+# Date 
+date_test <- create_date(
+  national_accounts,
+  projections
+)
+
 
 # ---- section-B.3-initial-import-projections ----
 
