@@ -23,7 +23,7 @@ librarian::shelf(packages)
 # Define and set start and end quarter. The start_quarter and end_quarter
 # variables can be modified to determine cumulative contributions of the FIM 
 # from any two quarters. 
-start_quarter <- yearquarter("2020 Q1")
+start_quarter <- yearquarter("2021 Q1")
 start_position <- which(usna$date == start_quarter)
 end_quarter <- yearquarter("2026 Q2")
 end_position <- which(usna$date == end_quarter) 
@@ -374,6 +374,10 @@ transfers_levels <-
      federal_health_outlays_contribution_levels + 
      state_health_outlays_contribution_levels) 
 
+consumption_levels <- (
+  transfers_levels + taxes_levels
+)
+
 # Get Date Column 
 date <- data.frame(usna$date) %>% 
   rename(date = usna.date)
@@ -401,27 +405,16 @@ data <- data.frame(
   date,
   minus_neutral_sum, 
   real_gdp_actual, 
-  real_gdp_counterfactual,
-  percent_difference,
-  federal_levels,
-  state_levels,
-  taxes_levels,
-  transfers_levels,
-  federal_health_outlays_contribution_levels,
-  state_health_outlays_contribution_levels,
-  federal_subsidies_contribution_levels,
-  state_subsidies_contribution_levels,
-  federal_ui_contribution_levels,
-  state_ui_contribution_levels,
-  rebate_checks_arp_contribution_levels,
-  rebate_checks_contribution_levels,
-  state_purchases_contribution_levels, 
-  federal_purchases_contribution_levels
+  # real_gdp_counterfactual,
+  # percent_difference,
+  federal_purchases_contribution_levels,
+  state_purchases_contribution_levels,
+  federal_levels, 
+  state_levels, 
+  consumption_levels
 ) %>% 
   filter(
-    date >= start_quarter - 2 & date <= current_quarter + 8 
+    date >= start_quarter - 2 & date <= current_quarter 
   )
-
-
 
 openxlsx::write.xlsx(data, file = glue('fim_levels.xlsx', overwrite = TRUE))
