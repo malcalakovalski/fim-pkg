@@ -1,7 +1,5 @@
+
 # levels.R
-#
-# 
-# Last Updated: 11/15/2024
 
 # Load packages - purr is not used in fiscal_impact_BETA.R
 packages <- c(
@@ -23,7 +21,7 @@ librarian::shelf(packages)
 # Define and set start and end quarter. The start_quarter and end_quarter
 # variables can be modified to determine cumulative contributions of the FIM 
 # from any two quarters. 
-start_quarter <- yearquarter("2021 Q1")
+start_quarter <- yearquarter("2020 Q1")
 start_position <- which(usna$date == start_quarter)
 end_quarter <- yearquarter("2026 Q2")
 end_position <- which(usna$date == end_quarter) 
@@ -65,6 +63,7 @@ cumprod_growth_investment_grants <- cumprod_growth(investment_grants_deflator_gr
 
 # State Purchases Deflator 
 cumprod_growth_state_purchases <- cumprod_growth(state_purchases_deflator_growth_test)
+
 
 #################################
 # GENERATE REAL GDP PROJECTIONS #
@@ -120,8 +119,8 @@ create_real_gdp <- function(
     coalesce_join(., placeholder_nas, by = "date") %>%
     # Repopulate the NAs to be 0s
     mutate(across(everything(), ~ replace_na(., 0))) %>%
-    # Reorder the entries chronologically
-    arrange(date)
+    # Pull just the data_series 
+    pull(data_series)
   
   return(result)
 }
@@ -132,6 +131,112 @@ real_gdp <- create_real_gdp(
   projections,
   create_placeholder_nas()
 )
+
+######################
+# GENERATE DEFLATORS #
+######################
+
+# Read in data sources to be combined
+national_accounts <- import_national_accounts()
+projections <- import_projections()
+
+create_federal_purchases_deflator <- function(
+    national_accounts, 
+    projections
+) {
+  # Select column of interest from the projections tibble
+  projections <- projections %>% 
+    # Divide federal purchases "gf" by real federal purchases "gfh".
+    mutate(data_series = gf / gfh) %>%
+    select(date, data_series)
+  
+  # Select columns of interest from the national accounts tibble
+  national_accounts <- national_accounts %>% 
+    # Divide federal purchases "gf" by real federal purchases "gfh".
+    mutate(data_series = gf / gfh) %>%
+    select(date, data_series)
+  
+  # Merge the national accounts with the projection using the commonly named `data_series`
+  # and `date` columns. The historic (national accounts) data take precedence in
+  # the case of any conflicting observations.
+  result <- coalesce_join(national_accounts, projections, by = 'date') %>%
+    # Repopulate the NAs to be 0s
+    mutate(across(everything(), ~ replace_na(., 0))) %>%
+    # Pull just the data_series 
+    pull(data_series)
+  
+  return(result)
+}
+
+create_state_purchases_deflator <- function(
+    national_accounts, 
+    projections
+) {
+  # Select column of interest from the projections tibble
+  projections <- projections %>% 
+    # Divide state purchases "gs" by real state purchases "gsh".
+    mutate(data_series = gs / gsh) %>%
+    select(date, data_series)
+  
+  # Select columns of interest from the national accounts tibble
+  national_accounts <- national_accounts %>% 
+    # Divide state purchases "gs" by real state purchases "gsh".
+    mutate(data_series = gs / gsh) %>%
+    select(date, data_series)
+  
+  # Merge the national accounts with the projection using the commonly named `data_series`
+  # and `date` columns. The historic (national accounts) data take precedence in
+  # the case of any conflicting observations.
+  result <- coalesce_join(national_accounts, projections, by = 'date') %>%
+    # Repopulate the NAs to be 0s
+    mutate(across(everything(), ~ replace_na(., 0))) %>%
+    # Pull just the data_series 
+    pull(data_series)
+  
+  return(result)
+}
+
+create_consumption_deflator <- function(
+    national_accounts, 
+    projections
+) {
+  # Select column of interest from the projections tibble
+  projections <- projections %>% 
+    # Divide consumption "c" by real consumption "ch".
+    mutate(data_series = c / ch) %>%
+    select(date, data_series)
+  
+  # Select columns of interest from the national accounts tibble
+  national_accounts <- national_accounts %>% 
+    # Divide consumption "c" by real consumption "ch".
+    mutate(data_series = c / ch) %>%
+    select(date, data_series)
+  
+  # Merge the national accounts with the projection using the commonly named `data_series`
+  # and `date` columns. The historic (national accounts) data take precedence in
+  # the case of any conflicting observations.
+  result <- coalesce_join(national_accounts, projections, by = 'date') %>%
+    # Repopulate the NAs to be 0s
+    mutate(across(everything(), ~ replace_na(., 0))) %>%
+    # Pull just the data_series 
+    pull(data_series)
+  
+  return(result)
+}
+
+# Generate the deflators for each of the contributions
+
+# Federal Purchases Deflator 
+federal_purchases_deflator <- create_federal_purchases_deflator(national_accounts,
+                                                                projections)
+
+# State Purchases Deflator
+state_purchases_deflator <- create_state_purchases_deflator(national_accounts,
+                                                            projections)
+
+# Consumption Deflator 
+consumption_deflator <- create_consumption_deflator(national_accounts,
+                                                    projections)
 
 
 #################################
@@ -170,8 +275,6 @@ contribution_levels <- function(x, mpc_matrix = NULL, cumprod) {
   result <- x %>%
     counterfactual_levels(x = ., cumprod = cumprod)
 }
-
-
 
 ################################
 # GET CONTRIBUTIONS AND LEVELS #
@@ -378,43 +481,56 @@ consumption_levels <- (
   transfers_levels + taxes_levels
 )
 
-# Get Date Column 
-date <- data.frame(usna$date) %>% 
-  rename(date = usna.date)
+##################################
+# DEFINE COUNTERFACTUAL FUNCTION #
+##################################
 
-# Get sum of difference between actual and counterfactual for each of the FIM inputs. 
-# The counterfactual is equal to the value of the input in the base quarter times cumulative product of the real potential GDP 
-# and deflator growth rates. 
+# Define Real Level Function
+# This function converts nominal levels into real 
+real_level <- function(level, #the data in question 
+                       deflator #the deflator for that data
+                       ) 
+  {
+  result <- level / deflator
+  return(result)
+}
 
-minus_neutral_sum <- 
-  (federal_levels +
-     state_levels +
-     taxes_levels +
-     transfers_levels)
+##############
+# GET LEVELS #
+##############
 
-# Pull "actual" real GDP from the real GDP test column
-real_gdp_actual <- real_gdp$data_series
+# Federal Purchases 
+real_federal_levels <- real_level(federal_levels,
+                                      federal_purchases_deflator)
 
-# Generate the counterfactual real GDP, which is equal to the actual real GDP minus delta (the difference between actual and counterfactual for each
-# of the FIM inputs.)
-real_gdp_counterfactual <- (real_gdp_actual - minus_neutral_sum)
+# State Purchases
+real_state_levels <- real_level(state_levels,
+                                      state_purchases_deflator)
 
-percent_difference <- (real_gdp_actual/real_gdp_counterfactual - 1)*100
+# Consumption
+real_consumption_levels <- real_level(consumption_levels,
+                                          consumption_deflator)
 
-data <- data.frame(
-  date,
-  minus_neutral_sum, 
-  real_gdp_actual, 
-  # real_gdp_counterfactual,
-  # percent_difference,
-  federal_purchases_contribution_levels,
-  state_purchases_contribution_levels,
-  federal_levels, 
-  state_levels, 
-  consumption_levels
-) %>% 
-  filter(
-    date >= start_quarter - 2 & date <= current_quarter 
-  )
+# Aggregate counterfactual levels
+real_delta <- real_federal_levels + 
+  real_state_levels + 
+  real_consumption_levels
 
-openxlsx::write.xlsx(data, file = glue('fim_levels.xlsx', overwrite = TRUE))
+# Calculate Real GDP Counterfactual
+real_gdp_counterfactual <- real_gdp - real_delta
+
+percent_difference <- ( real_gdp / real_gdp_counterfactual - 1 ) * 100
+
+# Output 
+output <- data.frame(
+  date, 
+  real_federal_levels,
+  real_state_levels,
+  real_consumption_levels,
+  real_delta,
+  real_gdp,
+  real_gdp_counterfactual
+) %>%
+  filter(date >= start_quarter - 1 & date <= end_quarter)
+
+openxlsx::write.xlsx(output, file = glue('fim_levels.xlsx', overwrite = TRUE))
